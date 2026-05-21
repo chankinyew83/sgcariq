@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SGCarIQ">
+<link id="apple-icon" rel="apple-touch-icon">
+<title>SGCarIQ · Singapore Car Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   DESIGN TOKENS — warm Scandi palette
+───────────────────────────────────────── */
+:root{
+  /* Warm neutral surfaces — not cold blue-black */
+  --s0:#0F0F0E; --s1:#171715; --s2:#1E1E1C; --s3:#262624; --s4:#2E2E2C;
+  --border:#2C2C2A; --border2:#3A3A38;
+
+  /* Semantic colors — muted, purposeful */
+  --color-primary:#C4885A;          /* warm amber — used sparingly */
+  --color-primary-lt:#D9A880;
+  --color-primary-bg:rgba(196,136,90,.1);
+  --color-primary-glow:rgba(196,136,90,.18);
+  --color-success:#5C9E7A;          /* muted sage */
+  --color-success-bg:rgba(92,158,122,.1);
+  --color-warning:#B8884A;          /* muted amber */
+  --color-warning-bg:rgba(184,136,74,.1);
+  --color-danger:#B86060;           /* muted red — danger only */
+  --color-danger-bg:rgba(184,96,96,.1);
+  --color-tesla:#B84444;
+  --color-tesla-bg:rgba(184,68,68,.07);
+
+  /* Typography — warm cream, not stark white */
+  --text-1:#EDEDEA; --text-2:#9B9B97; --text-3:#5C5C5A;
+
+  /* Type scale */
+  --t-xs:11px; --t-sm:12px; --t-base:13px;
+  --t-md:15px; --t-lg:18px; --t-xl:24px; --t-2xl:32px;
+
+  /* Spacing */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:10px;
+  --font-mono:'JetBrains Mono',monospace;
+}
+
+/* ─────────────────────────────────────────
+   RESET
+───────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--s0);color:var(--text-1);font-size:var(--t-base);line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:'Inter',sans-serif;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+/* ─────────────────────────────────────────
+   UTILITY — TYPE
+───────────────────────────────────────── */
+.u-xs{font-size:var(--t-xs)} .u-sm{font-size:var(--t-sm)} .u-md{font-size:var(--t-md)} .u-lg{font-size:var(--t-lg)}
+.u-dim{color:var(--text-2)} .u-muted{color:var(--text-3)}
+.u-success{color:var(--color-success)} .u-warning{color:var(--color-warning)}
+.u-danger{color:var(--color-danger)} .u-primary{color:var(--color-primary-lt)}
+.u-tesla{color:var(--color-tesla)}
+.u-mono{font-family:var(--font-mono)} .u-bold{font-weight:700} .u-heavy{font-weight:800}
+.u-upper{text-transform:uppercase;letter-spacing:.7px}
+.u-lh{line-height:1.65}
+
+/* ─────────────────────────────────────────
+   UTILITY — LAYOUT
+───────────────────────────────────────── */
+.u-stack-1{display:flex;flex-direction:column;gap:var(--sp-1)}
+.u-stack-2{display:flex;flex-direction:column;gap:var(--sp-2)}
+.u-stack-3{display:flex;flex-direction:column;gap:var(--sp-3)}
+.u-row{display:flex;align-items:center;gap:var(--sp-2)}
+.u-row-start{display:flex;align-items:flex-start;gap:var(--sp-3)}
+.u-between{display:flex;align-items:center;justify-content:space-between}
+.u-wrap{flex-wrap:wrap}
+.u-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-2)}
+.u-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2)}
+.u-grid-a{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:var(--sp-2)}
+@media(max-width:640px){.u-grid-3{grid-template-columns:repeat(2,1fr)}}
+.mt-2{margin-top:var(--sp-2)} .mt-3{margin-top:var(--sp-3)} .mt-4{margin-top:var(--sp-4)}
+.mb-2{margin-bottom:var(--sp-2)} .mb-3{margin-bottom:var(--sp-3)}
+.pt-3{padding-top:var(--sp-3)}
+.gap-line{border-top:1px solid var(--border)}
+.overflow-x{overflow-x:auto}
+
+/* ─────────────────────────────────────────
+   SURFACE
+───────────────────────────────────────── */
+.shell{max-width:680px;margin:0 auto;padding:var(--sp-4) var(--sp-4) 48px}
+@media(max-width:640px){.shell{padding:var(--sp-3) var(--sp-3) 40px}}
+@media(min-width:768px){.shell{padding:var(--sp-5) var(--sp-5) 56px}}
+@media(min-width:1024px){.shell{max-width:740px;padding:var(--sp-6) var(--sp-6) 64px}}
+
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-4);margin-bottom:var(--sp-3)}
+.card-label{font-size:var(--t-xs);font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:var(--sp-3)}
+.card-inset{background:var(--s2);border-radius:var(--r-sm);padding:var(--sp-3)}
+
+/* Card semantic variants */
+.card-success{border-left:2px solid var(--color-success)}
+.card-warning{border-left:2px solid var(--color-warning)}
+.card-danger{border-left:2px solid var(--color-danger)}
+.card-primary{border-left:2px solid var(--color-primary)}
+.card-tesla{background:var(--color-tesla-bg);border-color:rgba(184,68,68,.2)}
+.card-urgent{border-left:2px solid var(--color-warning)}
+
+/* ─────────────────────────────────────────
+   CHIPS
+───────────────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:3px;font-family:'Inter',sans-serif;font-size:var(--t-xs);font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;letter-spacing:.1px;background:var(--s3);color:var(--text-2)}
+.chip-success{background:var(--color-success-bg);color:var(--color-success);border:1px solid rgba(92,158,122,.25)}
+.chip-warning{background:var(--color-warning-bg);color:var(--color-warning);border:1px solid rgba(184,136,74,.25)}
+.chip-danger{background:var(--color-danger-bg);color:var(--color-danger);border:1px solid rgba(184,96,96,.25)}
+.chip-primary{background:var(--color-primary-bg);color:var(--color-primary-lt);border:1px solid rgba(196,136,90,.25)}
+.chip-tesla{background:var(--color-tesla-bg);color:var(--color-tesla);border:1px solid rgba(184,68,68,.25)}
+.chip-neutral{background:var(--s3);color:var(--text-2);border:1px solid var(--border)}
+
+/* ─────────────────────────────────────────
+   HEADER
+───────────────────────────────────────── */
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--sp-4);flex-wrap:wrap;gap:var(--sp-2)}
+.brand{display:flex;align-items:center;gap:var(--sp-2)}
+.brand-logo{width:18px;height:22px;flex-shrink:0}
+.brand-name{font-size:var(--t-md);font-weight:700;letter-spacing:-.3px}
+.brand-sub{font-size:var(--t-xs);color:var(--text-3);margin-top:2px}
+@media(max-width:480px){.hdr-hide{display:none}}
+
+/* ─────────────────────────────────────────
+   TABS
+───────────────────────────────────────── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:var(--sp-4);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-family:'Inter',-apple-system,sans-serif;padding:var(--sp-2) var(--sp-3);font-size:var(--t-sm);font-weight:500;color:var(--text-3);border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;letter-spacing:.3px;transition:color .14s;min-height:44px;display:inline-flex;align-items:center}
+.tab:hover{color:var(--text-2)}
+.tab.on{color:var(--text-1);border-bottom-color:var(--color-primary);font-weight:600}
+.tab:focus-visible{outline:2px solid var(--color-primary);outline-offset:-2px}
+.sec{display:none;animation:fadeIn .15s ease}
+.sec.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─────────────────────────────────────────
+   HERO
+───────────────────────────────────────── */
+.hero{background:var(--s2);border:1px solid var(--border2);border-radius:var(--r-md);padding:var(--sp-5);margin-bottom:var(--sp-3);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:0;width:40px;height:2px;background:var(--color-primary)}
+.hero-eyebrow{font-size:var(--t-xs);font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:var(--sp-2)}
+.hero-title{font-size:var(--t-xl);font-weight:700;letter-spacing:-.4px;line-height:1.15;margin-bottom:var(--sp-1)}
+@media(max-width:640px){.hero-title{font-size:var(--t-lg)}}
+@media(min-width:1024px){.hero-title{font-size:var(--t-2xl)}}
+.score-track{height:3px;background:var(--border2);border-radius:3px;overflow:hidden;margin:var(--sp-1) 0}
+.score-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* ─────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────── */
+.btn{font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:var(--sp-1);padding:var(--sp-2) var(--sp-4);border-radius:var(--r-sm);font-size:var(--t-sm);font-weight:600;border:none;min-height:44px;transition:opacity .14s;cursor:pointer}
+.btn:hover{opacity:.86}
+.btn:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+.btn-primary{background:var(--color-primary);color:#1a0e06}
+.btn-ghost{background:var(--s3);color:var(--text-2);border:1px solid var(--border2)}
+.btn-urgent{background:var(--color-warning-bg);color:var(--color-warning);border:1px solid rgba(245,158,11,.35)}
+.btn-tesla{background:var(--color-tesla-bg);color:var(--color-tesla);border:1px solid rgba(204,0,0,.35)}
+
+/* ─────────────────────────────────────────
+   SIGNAL TILES
+───────────────────────────────────────── */
+.signals{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.sig{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:var(--sp-3)}
+.sig-val{font-size:var(--t-lg);font-weight:700;letter-spacing:-.5px;font-family:var(--font-mono);line-height:1}
+@media(max-width:480px){.sig-val{font-size:var(--t-md)}}
+.sig-lbl{font-size:var(--t-xs);font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+.sig-trend{font-size:var(--t-xs);color:var(--text-3);margin-top:2px}
+
+/* ─────────────────────────────────────────
+   ACTION ITEMS
+───────────────────────────────────────── */
+.action{display:flex;align-items:flex-start;gap:var(--sp-3);background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:var(--sp-3);transition:border-color .14s}
+.action:hover{border-color:var(--border2)}
+.action-urgent{border-left:2px solid var(--color-warning)}
+.action-icon{font-size:18px;flex:0 0 22px;text-align:center;margin-top:1px}
+.action-title{font-size:var(--t-sm);font-weight:700;margin-bottom:2px}
+.action-body{font-size:var(--t-sm);color:var(--text-2);line-height:1.5}
+
+/* ─────────────────────────────────────────
+   SCORE LEADERBOARD
+───────────────────────────────────────── */
+.lb{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;transition:border-color .14s;cursor:pointer;margin-bottom:var(--sp-2)}
+.lb:hover{border-color:var(--border2)}
+.lb.open{border-color:var(--color-primary);background:var(--s2)}
+.lb-row{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);min-height:58px}
+.lb-rank{font-size:var(--t-xs);font-weight:700;color:var(--text-3);width:16px;flex:0 0 16px;text-align:center}
+.lb-name{font-size:var(--t-sm);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-sub{font-size:var(--t-xs);color:var(--text-2);margin-top:1px}
+.lb-score{font-size:var(--t-md);font-weight:800;font-family:var(--font-mono)}
+.lb-bar{height:3px;background:var(--border2);border-radius:2px;margin-top:3px;overflow:hidden}
+.lb-bar-fill{height:100%;border-radius:2px}
+.lb-lbl{font-size:9px;font-weight:700;margin-top:2px}
+.lb-detail{display:none;padding:var(--sp-3) var(--sp-4) var(--sp-4);border-top:1px solid var(--border);background:var(--s2)}
+.lb.open .lb-detail{display:block}
+
+/* ─────────────────────────────────────────
+   COST BARS
+───────────────────────────────────────── */
+.cost-row{display:flex;align-items:center;gap:var(--sp-3);padding:3px 0}
+.cost-name{font-size:var(--t-xs);font-weight:600;color:var(--text-2);width:86px;flex:0 0 86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cost-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.cost-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.cost-val{font-size:var(--t-xs);font-family:var(--font-mono);font-weight:700;width:50px;text-align:right;flex:0 0 50px}
+
+/* ─────────────────────────────────────────
+   SCENARIO SIMULATOR
+───────────────────────────────────────── */
+.sim{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-4)}
+@media(max-width:640px){.sim{grid-template-columns:1fr;gap:var(--sp-3)}}
+.sim-lbl{font-size:var(--t-xs);font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.sim-val{font-size:var(--t-lg);font-weight:800;font-family:var(--font-mono);color:var(--color-primary-lt);margin-bottom:6px}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--color-primary);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--color-primary);cursor:pointer;border:none}
+.range-ends{display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);margin-top:3px}
+.chart-box{position:relative;height:190px;margin-bottom:4px}
+
+/* ─────────────────────────────────────────
+   KEY TAKEAWAY
+───────────────────────────────────────── */
+.kt{background:var(--s2);border-radius:var(--r-sm);padding:var(--sp-3) var(--sp-4)}
+.kt-label{font-size:var(--t-xs);font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:var(--sp-2)}
+.kt-list{list-style:none;display:flex;flex-direction:column;gap:var(--sp-2)}
+.kt-list li{font-size:var(--t-sm);color:var(--text-2);line-height:1.55;padding-left:var(--sp-4);position:relative}
+.kt-list li::before{content:'→';position:absolute;left:0;color:var(--color-primary-lt);font-weight:700}
+
+/* ─────────────────────────────────────────
+   VERDICT
+───────────────────────────────────────── */
+.verdict{border-radius:var(--r-md);padding:var(--sp-5);margin-bottom:var(--sp-3);border:2px solid}
+.verdict-works{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.35)}
+.verdict-fails{background:var(--color-danger-bg);border-color:rgba(239,68,68,.35)}
+.verdict-title{font-size:var(--t-xl);font-weight:800;margin-bottom:4px}
+.verdict-works .verdict-title{color:var(--color-success)}
+.verdict-fails .verdict-title{color:var(--color-danger)}
+.vt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:var(--sp-2);margin:var(--sp-4) 0}
+.vt{background:rgba(0,0,0,.2);border-radius:var(--r-sm);padding:var(--sp-3)}
+.vt-val{font-size:var(--t-md);font-weight:800;font-family:var(--font-mono)}
+.vt-lbl{font-size:9px;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+
+/* ─────────────────────────────────────────
+   FORMS
+───────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.f-label{font-size:var(--t-xs);font-weight:700;color:var(--text-2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text-1);padding:9px 11px;font-size:16px;font-family:'Inter',sans-serif;outline:none;transition:border-color .14s}
+input:focus,select:focus,textarea:focus{border-color:var(--color-primary);box-shadow:0 0 0 2px var(--color-primary-bg)}
+textarea{resize:vertical;min-height:60px}
+select option{background:var(--s3)}
+.input-key{border-color:var(--color-primary)!important;border-width:2px!important}
+
+/* ─────────────────────────────────────────
+   EXPAND / PROGRESSIVE DISCLOSURE
+───────────────────────────────────────── */
+.expand-btn{font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:space-between;width:100%;font-size:var(--t-sm);color:var(--color-primary-lt);font-weight:700;cursor:pointer;padding:var(--sp-2) 0;border:none;background:none;text-align:left}
+.expand-btn::after{content:'▾';font-size:var(--t-xs);transition:transform .15s}
+.expand-btn.open::after{transform:rotate(180deg)}
+.expandable{display:none}
+.expandable.open{display:block;padding-top:var(--sp-3)}
+
+/* ─────────────────────────────────────────
+   PROMO CARDS
+───────────────────────────────────────── */
+.promo-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r-sm);padding:var(--sp-4);margin-bottom:var(--sp-2)}
+.promo-card.active{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)}
+.promo-card.tesla{border-color:rgba(204,0,0,.35);background:var(--color-tesla-bg)}
+
+/* ─────────────────────────────────────────
+   MILESTONE TRACKER
+───────────────────────────────────────── */
+.milestones{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.milestones::-webkit-scrollbar{display:none}
+.ms{display:flex;flex-direction:column;align-items:center;flex:0 0 68px;position:relative}
+.ms:not(:last-child)::after{content:'';position:absolute;top:12px;left:50%;width:100%;height:2px;background:var(--border2)}
+.ms.done::after{background:var(--color-success)}
+.ms.active::after{background:linear-gradient(90deg,var(--color-success),var(--border2))}
+.ms-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--t-xs);font-weight:700;position:relative;z-index:1;border:2px solid var(--border2)}
+.ms.done .ms-dot{background:var(--color-success);border-color:var(--color-success);color:#000}
+.ms.active .ms-dot{background:var(--color-primary);border-color:var(--color-primary);color:#fff;box-shadow:0 0 10px var(--color-primary-glow)}
+.ms.future .ms-dot{background:var(--s3);color:var(--text-3)}
+.ms-lbl{font-size:8px;color:var(--text-2);margin-top:4px;text-align:center;line-height:1.3;max-width:62px}
+.ms.active .ms-lbl{color:var(--color-primary-lt)}
+
+/* ─────────────────────────────────────────
+   TABLES
+───────────────────────────────────────── */
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;padding:6px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--s2)}
+th.right{text-align:right}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:var(--t-sm)}
+tr:last-child td{border-bottom:none}
+.tr-accent td{background:rgba(37,99,235,.05)}
+
+/* Mobile table → stacked cards */
+@media(max-width:640px){
+  .overflow-x{overflow-x:visible}
+  .overflow-x table{display:block}
+  .overflow-x table thead{display:none}
+  .overflow-x table tbody{display:flex;flex-direction:column;gap:var(--sp-2)}
+  .overflow-x table tr{display:block;background:var(--s2);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;border-top:2px solid var(--border2)}
+  .overflow-x table tr.tr-accent{background:rgba(37,99,235,.06)}
+  .overflow-x table td{display:flex;align-items:flex-start;gap:var(--sp-2);padding:7px 12px;border-bottom:1px solid var(--border);font-size:var(--t-sm);text-align:left!important}
+  .overflow-x table td:last-child{border-bottom:none;font-weight:700}
+  .overflow-x table td:first-child{display:block!important;background:var(--s3);font-weight:700;padding:10px 12px!important}
+  .overflow-x table td:first-child::before{display:none!important}
+  .overflow-x table td[data-label]::before{content:attr(data-label);color:var(--text-3);font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.4px;flex:0 0 82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:1px}
+  .show-more{display:block;width:100%;padding:10px;background:var(--s2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);color:var(--color-primary-lt);font-family:'Inter',sans-serif;font-size:var(--t-xs);font-weight:700;cursor:pointer;min-height:44px}
+  .tr-hide{display:none!important}
+}
+.show-more{display:none}
+
+/* ─────────────────────────────────────────
+   CALENDAR
+───────────────────────────────────────── */
+.cal-hdr{display:grid;grid-template-columns:32px repeat(12,1fr);gap:2px;margin-bottom:3px}
+.cal-yr{display:grid;grid-template-columns:32px repeat(12,1fr);gap:2px;margin-bottom:4px}
+.cal-lbl{font-size:9px;font-weight:700;color:var(--text-2);display:flex;align-items:center}
+.cal-mth{font-size:8px;color:var(--text-3);text-align:center;padding:2px}
+.cal-cell{border-radius:3px;padding:4px 2px;text-align:center;font-size:8px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="shell" role="main">
+
+<!-- HEADER -->
+<header class="hdr" role="banner">
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 100 160" fill="var(--color-primary)" aria-hidden="true">
+      <path d="M2,0 L98,0 L98,22 Q75,22 62,46 Q54,32 50,30 Q46,32 38,46 Q25,22 2,22 Z"/>
+      <rect x="44" y="30" width="12" height="130" rx="2"/>
+    </svg>
+    <div>
+      <div class="brand-name">SGCarIQ</div>
+      <div class="brand-sub">Singapore Car Intelligence</div>
+    </div>
+  </div>
+  <div class="u-row u-wrap" id="hdr-badges"></div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs" role="tablist">
+  <button class="tab on" onclick="nav('command')" role="tab" aria-selected="true">Command</button>
+  <button class="tab" onclick="nav('compare')" role="tab" aria-selected="false">Compare</button>
+  <button class="tab" onclick="nav('own')" role="tab" aria-selected="false">Ownership</button>
+  <button class="tab" onclick="nav('market')" role="tab" aria-selected="false">Market</button>
+  <button class="tab" onclick="nav('deal')" role="tab" aria-selected="false">Deal</button>
+  <button class="tab" onclick="nav('intel')" role="tab" aria-selected="false">Intel</button>
+</nav>
+
+<!-- ══════════ COMMAND ══════════ -->
+<section id="sec-command" class="sec on">
+  <!-- Tesla Deal Alert — urgent, 2 days -->
+  <div class="card card-urgent mb-3">
+    <div class="u-between u-wrap" style="gap:var(--sp-2);margin-bottom:var(--sp-2)">
+      <div class="u-row"><span class="chip chip-tesla">★ Tesla</span><span class="chip chip-warning">2 DAYS LEFT</span></div>
+      <span class="u-xs u-dim">Expires 19 May 2026</span>
+    </div>
+    <p class="u-sm u-bold mb-2">Tesla Car Expo Deal Extended — Guaranteed COE Package Back</p>
+    <div class="u-grid-2 mb-2" style="gap:var(--sp-2)">
+      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">Rate</p><p class="u-mono u-heavy u-tesla" style="font-size:var(--t-lg)">1.28%</p><p class="u-xs u-dim">Lowest ever. ≥$8k loan savings vs market.</p></div>
+      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">EV Rebate</p><p class="u-mono u-heavy u-warning" style="font-size:var(--t-lg)">$30k</p><p class="u-xs u-dim">Valid this year only. Lost if purchase deferred to 2027.</p></div>
+    </div>
+    <div class="u-row u-wrap" style="gap:var(--sp-2)">
+      <a class="btn btn-tesla" href="tel:+6591841638">📞 Tesla +65 9184 1638</a>
+      <button class="btn btn-ghost u-xs" onclick="nav('market')">View in Promotions →</button>
+    </div>
+  </div>
+
+  <div id="hero-card"></div>
+  <div class="signals" id="signals"></div>
+  <div class="card">
+    <p class="card-label">Priority Actions</p>
+    <div id="actions" class="u-stack-2"></div>
+    <div class="gap-line mt-3 pt-3 u-row u-wrap" style="gap:var(--sp-3)">
+      <button class="btn btn-ghost u-sm" id="cmd-scan-btn" onclick="document.getElementById('cmd-scan-file').click()">📷 Scan Dealer Flyer</button>
+      <span id="cmd-scan-status" class="u-sm u-dim">Snap any promo → auto-extracts to Market</span>
+      <input type="file" id="cmd-scan-file" accept="image/*" style="display:none" onchange="handleCmdScan(this.files[0])">
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-label">Decision Progress</p>
+    <div class="milestones" role="list">
+      <div class="ms done" role="listitem"><div class="ms-dot">✓</div><div class="ms-lbl">Requirements</div></div>
+      <div class="ms done" role="listitem"><div class="ms-dot">✓</div><div class="ms-lbl">Market Survey</div></div>
+      <div class="ms done" role="listitem"><div class="ms-dot">✓</div><div class="ms-lbl">Pricing Intel</div></div>
+      <div class="ms active" role="listitem"><div class="ms-dot">4</div><div class="ms-lbl">TCO Analysis</div></div>
+      <div class="ms future" role="listitem"><div class="ms-dot">5</div><div class="ms-lbl">COE Strategy</div></div>
+      <div class="ms future" role="listitem"><div class="ms-dot">6</div><div class="ms-lbl">Negotiate</div></div>
+      <div class="ms future" role="listitem"><div class="ms-dot">7</div><div class="ms-lbl">Deliver</div></div>
+    </div>
+    <p class="u-xs u-primary mt-2">Stage 4 of 7 — Tesla deal window now active: 2 days remaining</p>
+  </div>
+</section>
+
+<!-- ══════════ COMPARE ══════════ -->
+<section id="sec-compare" class="sec">
+  <div class="card">
+    <p class="card-label">Decision Score — ranked by purchase suitability</p>
+    <p class="u-sm u-dim mb-3">Weighted: financial 28% · road tax 22% · timing 18% · family fit 16% · brand 16%. Analytical guidance — not a guarantee.</p>
+    <div id="leaderboard"></div>
+  </div>
+  <div class="card">
+    <p class="card-label">Annual Ownership Cost</p>
+    <p class="u-xs u-muted mb-2">7-year hold · 15,000 km/yr · COE $126,236. Adjust in Ownership tab.</p>
+    <div id="cost-bars" class="u-stack-1"></div>
+  </div>
+  <div class="card card-tesla">
+    <div class="u-row mb-3">
+      <svg width="16" height="20" viewBox="0 0 100 160" fill="var(--color-tesla)" aria-hidden="true"><path d="M2,0 L98,0 L98,22 Q75,22 62,46 Q54,32 50,30 Q46,32 38,46 Q25,22 2,22 Z"/><rect x="44" y="30" width="12" height="130" rx="2"/></svg>
+      <div><p class="u-bold u-tesla">Tesla Model Y L — Preferred</p><p class="u-xs u-dim">Currently ranked below alternatives due to road tax. Deal is LIVE — 2 days to decide.</p></div>
+    </div>
+    <div class="u-grid-2">
+      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">Road Tax Blocker</p><p class="u-mono u-heavy u-danger" style="font-size:var(--t-md)">$5,400/yr</p><p class="u-xs u-dim mt-2">Motor ~340kW. Gap vs IONIQ 9: $4,658/yr · $32,606 over 7yr</p></div>
+      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">Unlock Condition</p><p class="u-bold u-warning">Tesla YL RWD</p><p class="u-xs u-dim mt-2">≤230kW variant → $742/yr. Est. SG arrival ~Q3 2027 if announced now.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ OWNERSHIP ══════════ -->
+<section id="sec-own" class="sec">
+  <div class="card">
+    <p class="card-label">Scenario Simulator</p>
+    <p class="u-xs u-muted mb-3">Adjust variables to see how annual ownership cost shifts across vehicles.</p>
+    <div class="sim">
+      <div><p class="sim-lbl">COE Level</p><p class="sim-val" id="v-coe">$126,236</p><input type="range" id="s-coe" min="100000" max="145000" step="1000" value="126236" oninput="onScenario()"><div class="range-ends"><span>$100k</span><span>$145k</span></div></div>
+      <div><p class="sim-lbl">Hold Period</p><p class="sim-val" id="v-hold">7 years</p><input type="range" id="s-hold" min="5" max="10" step="1" value="7" oninput="onScenario()"><div class="range-ends"><span>5yr</span><span>10yr</span></div></div>
+      <div><p class="sim-lbl">Annual km</p><p class="sim-val" id="v-km">15,000</p><input type="range" id="s-km" min="8000" max="30000" step="1000" value="15000" oninput="onScenario()"><div class="range-ends"><span>8k</span><span>30k</span></div></div>
+    </div>
+    <div class="chart-box"><canvas id="tco-chart"></canvas></div>
+    <p class="u-xs u-muted" style="text-align:center;margin-top:4px" id="scenario-note"></p>
+  </div>
+  <div class="card">
+    <p class="card-label">Cost Breakdown — <span id="own-label">—</span></p>
+    <p class="u-xs u-muted mb-3">Applies Budget 2026 PARF schedule (5%–30%, cap $30k).</p>
+    <div id="own-breakdown"></div>
+  </div>
+  <div class="card">
+    <p class="card-label">Depreciation — Tesla YL $264,999</p>
+    <div class="overflow-x">
+      <table>
+        <thead><tr><th>Hold</th><th>PARF %</th><th class="right">PARF</th><th class="right">COE Value</th><th class="right">Residual</th><th class="right">Annual Dep</th></tr></thead>
+        <tbody id="dep-table"></tbody>
+      </table>
+    </div>
+    <button class="show-more" id="dep-more" onclick="toggleRows(this)">▾ Show all 10 years</button>
+    <p class="u-xs u-muted mt-2">Budget 2026: PARF cut 45pp. COE remaining value now drives sell-timing more than PARF. Lowest annual dep = hold 10yr. Best cash recovery = sell at 7yr.</p>
+  </div>
+</section>
+
+<!-- ══════════ MARKET ══════════ -->
+<section id="sec-market" class="sec">
+  <div class="signals" id="mkt-signals">
+    <div class="sig"><p class="sig-val u-danger">$126k</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend u-danger">↑ +$5,235</p></div>
+    <div class="sig"><p class="sig-val u-warning">3d</p><p class="sig-lbl">Next Bid</p><p class="sig-trend">20 May</p></div>
+    <div class="sig"><p class="sig-val u-warning">2d</p><p class="sig-lbl">Tesla Deal</p><p class="sig-trend u-warning">Exp 19 May</p></div>
+  </div>
+
+  <!-- COE UPDATE — tap here after every bid result -->
+  <div class="card card-primary">
+    <p class="card-label">COE Live Data</p>
+    <p class="u-xs u-dim mb-3">LTA publishes COE results after every bid (every 2 weeks). The app can fetch automatically — or you can enter manually as a fallback.</p>
+
+    <!-- Auto-fetch row -->
+    <div class="u-row u-wrap mb-3" style="gap:var(--sp-2)">
+      <button class="btn btn-primary" onclick="autoFetchCOE()">⬇ Fetch Latest from LTA</button>
+      <span id="coe-fetch-status" class="u-xs u-dim" style="align-self:center">Tries LTA DataMall → data.gov.sg automatically</span>
+    </div>
+
+    <!-- Manual override -->
+    <div class="form-grid" style="grid-template-columns:1fr 1fr auto;align-items:flex-end">
+      <div>
+        <label class="f-label">Cat B Premium ($)</label>
+        <input id="coe-new-val" type="number" placeholder="e.g. 128500">
+      </div>
+      <div>
+        <label class="f-label">Bid Round</label>
+        <input id="coe-new-lbl" placeholder="e.g. May 2 2026">
+      </div>
+      <button class="btn btn-ghost" onclick="updateCOE()" style="align-self:flex-end">Save</button>
+    </div>
+    <p class="u-xs u-muted mt-2" id="coe-updated">Last updated: 6 May 2026 · Latest: $126,236</p>
+
+    <!-- LTA key setup -->
+    <div class="mt-3 pt-3 gap-line">
+      <button class="expand-btn u-xs" onclick="toggleExpand('coe-setup',this)">Setup for full automation (LTA API key + Netlify Function)</button>
+      <div class="expandable" id="coe-setup">
+        <div class="kt mt-2">
+          <p class="kt-label">Option A — LTA DataMall key (works in Claude, may be blocked on Netlify)</p>
+          <ul class="kt-list">
+            <li>Go to <strong>datamall.lta.gov.sg</strong> → Request for API Access → free, instant approval</li>
+            <li>Copy your AccountKey and paste into the <code>LTA_KEY</code> variable at the top of the HTML file</li>
+            <li>Auto-fetch will then pull live COE data directly</li>
+          </ul>
+        </div>
+        <div class="kt mt-2">
+          <p class="kt-label">Option B — Netlify Function (fully automated on Netlify, recommended)</p>
+          <ul class="kt-list">
+            <li>Create file <code>netlify/functions/coe.js</code> in your Netlify project with the code below</li>
+            <li>Add <code>LTA_ACCOUNT_KEY=your_key</code> in Netlify → Site Settings → Environment Variables</li>
+            <li>Set <code>NETLIFY_FN = '/.netlify/functions/coe'</code> in the HTML — no key exposed in browser</li>
+          </ul>
+          <pre style="background:var(--s3);padding:var(--sp-3);border-radius:var(--r-sm);font-size:10px;color:var(--text-2);overflow-x:auto;margin-top:var(--sp-2);font-family:var(--font-mono);line-height:1.6">// netlify/functions/coe.js
+const fetch = require('node-fetch');
+exports.handler = async () => {
+  const r = await fetch('https://datamall2.mytransport.sg/ltaodataservice/COEResult', {
+    headers: { AccountKey: process.env.LTA_ACCOUNT_KEY }
+  });
+  return {
+    statusCode: 200,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    body: JSON.stringify(await r.json())
+  };
+};</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+    <p class="card-label">COE — Cat B Trend</p>
+    <div class="chart-box"><canvas id="coe-chart"></canvas></div>
+    <p class="u-xs u-muted" style="text-align:center;margin-top:4px">Next results 20 May 2026</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Promotions</p>
+    <div id="promo-list"></div>
+  </div>
+  <div class="card">
+    <p class="card-label">Log Promotion</p>
+    <div class="u-row u-wrap mb-3" style="gap:var(--sp-2)">
+      <button class="btn btn-primary" id="mkt-scan-btn" onclick="document.getElementById('mkt-scan-file').click()">📷 Scan Flyer</button>
+      <span id="scan-status" class="u-sm u-dim">Upload a dealer flyer to auto-extract</span>
+      <input type="file" id="mkt-scan-file" accept="image/*" style="display:none" onchange="doScan(this.files[0])">
+    </div>
+    <div class="form-grid">
+      <div><label class="f-label">Source</label><input id="p-source" placeholder="e.g. Tesla Singapore"></div>
+      <div><label class="f-label">Valid Until</label><input id="p-valid" placeholder="e.g. 19 May 2026"></div>
+      <div><label class="f-label">Interest Rate %</label><input id="p-rate" type="number" step=".01" placeholder="e.g. 1.28"></div>
+    </div>
+    <div class="mb-3"><label class="f-label mb-2" style="display:block">Quoted Prices</label><div id="price-inputs"></div></div>
+    <div id="perk-rows" class="u-stack-2 mb-2">
+      <div class="u-row"><input placeholder="Perk description" class="pk-lbl" style="flex:2"><input type="number" placeholder="SGD value" class="pk-val" style="flex:1;margin-left:6px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;min-width:36px;min-height:44px">✕</button></div>
+    </div>
+    <button onclick="addPerkRow()" class="btn btn-ghost u-xs" style="padding:6px 12px;min-height:40px;margin-bottom:var(--sp-3)">+ Add Perk</button>
+    <div class="mb-3"><label class="f-label">Notes</label><textarea id="p-notes" rows="2" placeholder="Confirm mileage, expiry, minimum loan"></textarea></div>
+    <div class="u-row u-wrap"><button class="btn btn-primary" onclick="savePromo()">Save</button><button class="btn btn-ghost" onclick="clearForm()">Clear</button></div>
+  </div>
+</section>
+
+<!-- ══════════ DEAL ══════════ -->
+<section id="sec-deal" class="sec">
+  <div id="bridge-card"></div>
+  <div class="card">
+    <p class="card-label">Bridge Calculator</p>
+    <p class="u-sm u-dim mb-3">Take the dealer loan at the minimum qualifying amount to preserve incentives. Bridge the remainder with a cheaper personal loan. Confirm the minimum % — that single number determines the saving.</p>
+    <div class="form-grid">
+      <div><label class="f-label">Car Price ($)</label><input id="b-price" type="number" value="264999" oninput="calcBridge()"></div>
+      <div><label class="f-label">MAS LTV Cap %</label><input id="b-ltv" type="number" value="60" oninput="calcBridge()"></div>
+      <div><label class="f-label">Dealer Rate % flat</label><input id="b-rate" type="number" step=".01" value="1.28" oninput="calcBridge()"></div>
+      <div><label class="f-label">Car Tenure yr</label><input id="b-tenure" type="number" value="7" oninput="calcBridge()"></div>
+      <div><label class="f-label u-warning">Dealer Min Loan % ← confirm</label><input id="b-min" type="number" value="50" step="5" class="input-key" oninput="calcBridge()"></div>
+      <div><label class="f-label">Incentives ($)</label><input id="b-incentives" type="number" value="6330" oninput="calcBridge()"></div>
+      <div><label class="f-label">PL Rate % flat</label><input id="b-pl-rate" type="number" step=".01" value="1.08" oninput="calcBridge()"></div>
+      <div><label class="f-label">PL Tenure yr</label><input id="b-pl-tenure" type="number" value="3" oninput="calcBridge()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-label">Personal Loan Market — May 2026</p>
+    <div class="overflow-x">
+      <table>
+        <thead><tr><th>Bank</th><th>Rate</th><th>EIR</th><th>Tenure</th><th>Promo</th><th>Expires</th><th class="right">Saving ~$26k</th></tr></thead>
+        <tbody>
+          <tr class="tr-accent"><td><strong>SCB CashOne</strong></td><td class="u-mono u-bold">1.08%</td><td class="u-mono">~2.09%</td><td>3yr</td><td class="u-success">3% cashback new client. $199 fee.</td><td class="u-warning">30 Jun</td><td class="right u-mono u-bold u-success">~$2,045</td></tr>
+          <tr><td><strong>UOB</strong></td><td class="u-mono u-bold">1.00%</td><td class="u-mono">1.93%</td><td>5yr</td><td class="u-success">2% rebate ≥$15k</td><td class="u-warning">31 May</td><td class="right u-mono u-success">~$1,295</td></tr>
+          <tr><td><strong>UOB</strong></td><td class="u-mono">1.52%</td><td class="u-mono">2.92%</td><td>3yr</td><td class="u-dim">Existing customer</td><td class="u-dim">—</td><td class="right u-mono u-success">~$1,190</td></tr>
+          <tr><td><strong>DBS/POSB</strong></td><td class="u-mono">1.48%</td><td class="u-mono">3.22%</td><td>3yr</td><td>3% via MoneySmart</td><td class="u-warning">31 Jul</td><td class="right u-mono u-success">~$1,220</td></tr>
+          <tr><td><strong>OCBC</strong></td><td class="u-mono u-muted">~2.50%</td><td class="u-mono u-muted">~4.7%</td><td>3yr</td><td class="u-dim">—</td><td class="u-dim">—</td><td class="right u-mono u-danger">Negative</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="u-xs u-muted mt-2">Bridge: 10% of $264,999 ≈ $26,500 (60% MAS cap − 50% min qualifying). SCB saving net of fee + cashback. Rates depend on credit profile.</p>
+  </div>
+  <div class="card card-primary">
+    <button class="expand-btn" onclick="toggleExpand('bridge-how',this)" aria-expanded="false">How the bridge works</button>
+    <div class="expandable" id="bridge-how">
+      <div class="kt">
+        <p class="kt-label">Three key points</p>
+        <ul class="kt-list">
+          <li>Take the dealer loan at the minimum qualifying amount. The dealer earns a referral fee and you retain all incentives — both parties benefit.</li>
+          <li>Bridge the gap (MAS cap minus minimum) with a cheaper personal loan. SCB at 1.08%×3yr = 3.24% total vs Tesla DBS 1.28%×7yr = 8.96% total. The saving comes from duration, not the headline rate.</li>
+          <li>Tesla has no stated minimum loan (no penalty for cash payment). If confirmed, bridge the full 60% LTV allocation — maximising saving without any incentive trade-off.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="card card-danger">
+    <button class="expand-btn" onclick="toggleExpand('mas-rules',this)" aria-expanded="false">MAS Regulatory Framework</button>
+    <div class="expandable" id="mas-rules">
+      <div class="u-stack-2 pt-3">
+        <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">LTV cap (OMV &gt; $20k)</span><span class="u-mono u-bold u-sm">60% of price</span></div>
+        <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">Max car loan tenure</span><span class="u-mono u-sm">7 years</span></div>
+        <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">TDSR rule</span><span class="u-mono u-sm">≤ 55% gross income</span></div>
+        <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">Unsecured credit cap</span><span class="u-mono u-sm">12× monthly income</span></div>
+        <div class="u-between" style="background:var(--color-danger-bg);padding:6px 8px;border-radius:var(--r-sm)"><span class="u-sm u-danger">100% dealer schemes</span><span class="u-xs u-danger">Unregulated — no MAS protection</span></div>
+        <p class="u-xs u-muted">Tesla YL: $264,999 × 60% = $158,999 max loan. At 1.28%×7yr: ~$2,062/mo car + $759/mo PL = $2,821/mo → needs ~$5,130/mo gross income (TDSR).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ INTEL ══════════ -->
+<section id="sec-intel" class="sec">
+  <div class="card card-tesla">
+    <p class="card-label u-tesla">Tesla YL RWD — Priority Watch</p>
+    <p class="u-sm u-dim u-lh">A ≤230kW YL variant would drop road tax from $5,400 to $742/yr — closing the $32,606 over-7yr gap. Monitor: <strong>insideevs.com · electrek.co · caradvice.com.au</strong>. SG follows global launches by ~12 months. Est. SG arrival if announced now: Q3 2027.</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Buy Window Calendar — 2026 to Q1 2028</p>
+    <div class="overflow-x">
+      <div style="min-width:560px">
+        <div class="cal-hdr"><div></div><div class="cal-mth">Jan</div><div class="cal-mth">Feb</div><div class="cal-mth">Mar</div><div class="cal-mth">Apr</div><div class="cal-mth">May</div><div class="cal-mth">Jun</div><div class="cal-mth">Jul</div><div class="cal-mth">Aug</div><div class="cal-mth">Sep</div><div class="cal-mth">Oct</div><div class="cal-mth">Nov</div><div class="cal-mth">Dec</div></div>
+        <div class="cal-yr"><div class="cal-lbl">2026</div><div class="cal-cell" style="background:#1D4ED8;color:#fff">Show🏮</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#78350F;color:#fff">↑COE</div><div class="cal-cell" style="background:#065F46;color:#fff">Expo✅</div><div class="cal-cell" style="background:#1E3A8A;color:#fff">PL🏦</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#0C4A6E;color:#fff">Brand</div><div class="cal-cell" style="background:#0C4A6E;color:#fff">Brand</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#78350F;color:#fff">Q4↓</div><div class="cal-cell" style="background:#78350F;color:#fff">Q4↓</div></div>
+        <div class="cal-yr"><div class="cal-lbl" style="color:var(--color-primary-lt)">2027</div><div class="cal-cell" style="background:#1D4ED8;color:#fff" title="Motorshow + CNY = strongest window">🏆Best</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#78350F;color:#fff">↑COE</div><div class="cal-cell" style="background:#065F46;color:#fff">Expo?</div><div class="cal-cell" style="background:#1E3A8A;color:#fff">PL🏦</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#0C4A6E;color:#fff">Brand</div><div class="cal-cell" style="background:#134E4A;color:#fff" title="Tesla YL RWD potential arrival">Tesla?</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:#78350F;color:#fff">Q4↓</div><div class="cal-cell" style="background:#78350F;color:#fff">Q4↓</div></div>
+        <div class="cal-yr"><div class="cal-lbl" style="color:var(--text-3)">2028</div><div class="cal-cell" style="background:#1D4ED8;color:#fff">Show🏮</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3)">—</div><div class="cal-cell" style="background:var(--s3);color:var(--text-3);opacity:.5">→</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div><div class="cal-cell" style="background:var(--s3);opacity:.25">·</div></div>
+      </div>
+    </div>
+    <div class="u-row u-wrap mt-3 u-xs u-dim" style="gap:12px">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#065F46;margin-right:4px;vertical-align:middle"></span>Car show deals</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1D4ED8;margin-right:4px;vertical-align:middle"></span>Show + CNY PL</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#134E4A;margin-right:4px;vertical-align:middle"></span>Tesla RWD watch</span>
+    </div>
+    <p class="u-xs u-muted mt-2">Jan 2027 = single strongest window. Tesla YL RWD watch window: Aug–Sep 2027.</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Monitoring Cadence</p>
+    <div class="u-stack-2">
+      <div class="u-row-start gap-line" style="padding:8px 0"><div class="u-xs u-muted u-upper" style="flex:0 0 72px;padding-top:1px">Every 2wk</div><div><p class="u-sm u-bold">COE result — motorist.sg</p><p class="u-xs u-dim">Rising: shortens window. Each round ~$2,600 Cat B impact.</p></div></div>
+      <div class="u-row-start gap-line" style="padding:8px 0"><div class="u-xs u-muted u-upper" style="flex:0 0 72px;padding-top:1px">Weekly</div><div><p class="u-sm u-bold">Scrape IONIQ 9 — sgcarmart.com</p><p class="u-xs u-dim">Demo units occasionally below new price.</p></div></div>
+      <div class="u-row-start gap-line" style="padding:8px 0"><div class="u-xs u-warning u-bold u-upper" style="flex:0 0 72px;padding-top:1px">Monthly</div><div><p class="u-sm u-bold">Tesla YL RWD — insideevs.com</p><p class="u-xs u-dim">Any ≤230kW announcement overrides recommendation.</p></div></div>
+      <div class="u-row-start gap-line" style="padding:8px 0"><div class="u-xs u-muted u-upper" style="flex:0 0 72px;padding-top:1px">Monthly</div><div><p class="u-sm u-bold">Ranee — +65 9850 5206</p><p class="u-xs u-dim">Demo unit status. Minimum qualifying loan %. Silent promos.</p></div></div>
+      <div class="u-row-start" style="padding:8px 0"><div class="u-xs u-warning u-bold u-upper" style="flex:0 0 72px;padding-top:1px">Jan 🏮</div><div><p class="u-sm u-bold">Personal loan window — MoneySmart / SingSaver</p><p class="u-xs u-dim">Best rates of the year. Apply via aggregator. Get approval before S&P signing.</p></div></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+// STORE — cloud-ready persistence layer
+// Tries window.storage (Claude artifact, cross-device)
+// Falls back to localStorage (Netlify, same-device)
+// Swap API_BASE_URL for your own REST endpoint when ready
+// ═══════════════════════════════════════
+const API_BASE_URL = ''; // e.g. 'https://your-api.com/sgcariq' — leave empty to use localStorage
+
+const Store = {
+  async get(key) {
+    if(API_BASE_URL) {
+      try {
+        const r = await fetch(`${API_BASE_URL}/${key}`);
+        if(r.ok) return await r.json();
+      } catch(e) {}
+    }
+    try {
+      if(typeof window.storage !== 'undefined') {
+        const r = await window.storage.get('sgcariq:'+key);
+        return r ? JSON.parse(r.value) : null;
+      }
+    } catch(e) {}
+    try { const v = localStorage.getItem('sgcariq:'+key); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+  },
+  async set(key, val) {
+    const json = JSON.stringify(val);
+    if(API_BASE_URL) {
+      try {
+        await fetch(`${API_BASE_URL}/${key}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:json });
+        return;
+      } catch(e) {}
+    }
+    try {
+      if(typeof window.storage !== 'undefined') { await window.storage.set('sgcariq:'+key, json); return; }
+    } catch(e) {}
+    try { localStorage.setItem('sgcariq:'+key, json); } catch(e) {}
+  }
+};
+
+// ═══════════════════════════════════════
+// COE HISTORY — updated by user, persisted via Store
+// ═══════════════════════════════════════
+let COE_HISTORY = {
+  bids: [
+    { label:'Jan 1 \'26', value:119100 },
+    { label:'Jan 2 \'26', value:120500 },
+    { label:'Feb 1 \'26', value:110890 },
+    { label:'Feb 2 \'26', value:112000 },
+    { label:'Mar 1 \'26', value:114002 },
+    { label:'Mar 2 \'26', value:115568 },
+    { label:'Apr 1 \'26', value:120001 },
+    { label:'Apr 2 \'26', value:121001 },
+    { label:'May 1 \'26', value:126236 },
+  ],
+  updated: '6 May 2026'
+};
+
+
+const S = { coe:126236, hold:7, km:15000, elec:.327, petrol:2.50, insEv:2200, insHyb:2000, svcEv:800, svcHyb:1800, park:2400 };
+
+const CARS = [
+  { id:'tesla-yl', name:'Tesla YL AWD ★',  short:'Tesla YL',    seats:7, type:'BEV SUV',  kw:340, consumption:14.7, list:264999, b6:264999, expo:264999, roadTax:5400, fuel:'ev', arf:50000, loanRate:1.28, loanTenure:7, notes:'Preferred. Road tax $5,400/yr blocks ranking until ≤230kW variant available. Deal ACTIVE 2 days.' },
+  { id:'i9-std',   name:'IONIQ 9 2WD',     short:'IONIQ 9 2WD', seats:7, type:'BEV SUV',  kw:160, consumption:20.6, list:394499, b3:311999, b6:305999, expo:294999, roadTax:742, fuel:'ev', arf:50000, loanRate:1.98, loanTenure:5, notes:'Best value entry. Confirm 6-BIDS batch availability.' },
+  { id:'i9-demo',  name:'IONIQ 9 Demo 6s', short:'IONIQ 9 Demo', seats:6, type:'BEV SUV',  kw:160, consumption:20.6, list:394499, b6:305999, expo:299999, roadTax:742, fuel:'ev', arf:50000, loanRate:1.98, loanTenure:5, notes:'6-seat config. Confirm availability and mileage: Ranee +65 9850 5206.' },
+  { id:'i9-cal',   name:'IONIQ 9 Cal 6s',  short:'IONIQ 9 Cal', seats:6, type:'BEV SUV',  kw:213, consumption:20.6, list:429499, b3:346999, b6:340999, roadTax:742, fuel:'ev', arf:55000, loanRate:1.98, loanTenure:5, notes:'Captain chairs AWD. +$41k premium over Demo.' },
+  { id:'santafe',  name:'Santa Fe Cal 6s',  short:'Santa Fe',   seats:6, type:'Hybrid SUV', kw:180, consumption:null, list:282999, b6:282999, expo:272999, roadTax:1480, fuel:'hybrid', arf:35000, loanRate:1.98, loanTenure:5, notes:'Indent basis — no stock. 1.6T hybrid.' },
+  { id:'carnival', name:'Kia Carnival',     short:'Carnival',   seats:7, type:'Hybrid MPV', kw:180, consumption:null, list:295999, b6:295999, roadTax:1480, fuel:'hybrid', arf:35000, loanRate:1.98, loanTenure:5, notes:'MPV format. Strong running cost profile.' },
+];
+
+let PROMOS = [
+  {
+    id:'tesla-sms-may26', source:'Tesla Singapore — SMS Promo', date:'17 May 2026', validUntil:'2026-05-19',
+    interest:1.28, prices:{'tesla-yl':264999},
+    perks:[{l:'1yr road tax (incl.)',v:5400},{l:'Guaranteed COE option',v:3000}],
+    notes:'EXTENDED to 19 May. Guaranteed COE back. 1.28% lowest ever rate. $30k VES rebate already reflected in $264,999 price — not an additional saving. Risk: VES bands may change in 2026 Budget, potentially reducing rebate for 2027 purchases. Limited units. Call: +65 9184 1638.',
+    active:true
+  },
+  {
+    id:'expo-may26', source:'Komoco — The Car Expo', date:'9–10 May 2026', validUntil:'2026-05-11',
+    interest:1.98, prices:{'i9-std':294999,'i9-demo':299999,'santafe':272999},
+    perks:[{l:'Insurance credit',v:300},{l:'Loan subsidy',v:1288},{l:'10yr servicing',v:4000},{l:'1yr road tax',v:742}],
+    notes:'Expo expired. Demo unit may still be available at last-known price.',
+    active:false
+  },
+];
+
+// ═══════════════════════════════════════
+// DECISION SCORE ENGINE
+// ═══════════════════════════════════════
+const W = { financial:.28, roadtax:.22, timing:.18, family:.16, brand:.16 };
+
+function score(car) {
+  const tco = getTCO(car,7).annualCost;
+  const fin = Math.max(0, Math.min(100, ((44000-tco)/(44000-26000))*100));
+  const rt  = car.roadTax<=800 ? 100 : car.roadTax<=2000 ? 45 : 0;
+  // Timing: Tesla has ACTIVE deal right now — bump timing score for 2-day window
+  let tim = 50;
+  if(car.id==='tesla-yl') tim = 85; // Active deal with $30k rebate expiring
+  else if(car.expo) tim += 15;
+  if(car.id==='i9-demo') tim = Math.min(100,tim+25);
+  if(car.id==='santafe'||car.id==='carnival') tim = Math.max(0,tim-20);
+  const fam = car.seats===6&&car.type.includes('SUV')?100:car.seats===7&&car.type.includes('SUV')?78:58;
+  const brd = car.id.startsWith('tesla')?100:car.id.includes('i9')?68:58;
+  const raw = fin*W.financial + rt*W.roadtax + tim*W.timing + fam*W.family + brd*W.brand;
+  const tot = Math.round(raw);
+  return {
+    tot, fin:Math.round(fin), rt:Math.round(rt), tim:Math.round(tim), fam:Math.round(fam), brd:Math.round(brd),
+    lbl: tot>=80?'STRONG BUY':tot>=65?'BUY':tot>=50?'CONSIDER':tot>=35?'WATCH':'BLOCKED',
+    col: tot>=75?'var(--color-success)':tot>=50?'var(--color-warning)':'var(--color-danger)',
+  };
+}
+
+// ─── bestPrice: checks live promos first, falls back to car data ───
+// This means scanning + saving any new promo automatically updates
+// TCO, scores, and cost bars — no manual intervention needed.
+function bestPrice(car) {
+  const today = new Date();
+  let best = null;
+  for (const p of PROMOS) {
+    if (new Date(p.validUntil) < today) continue; // skip expired
+    const pr = p.prices[car.id];
+    if (pr && (best === null || pr < best)) best = pr;
+  }
+  return best || car.expo || car.b6 || car.list;
+}
+
+
+function getTCO(car, years) {
+  const {coe,km,elec,petrol,insEv,insHyb,svcEv,svcHyb,park} = S;
+  const price = bestPrice(car);
+  const isEV  = car.fuel==='ev';
+  const parfPct = [,.30,.30,.30,.30,.30,.25,.20,.15,.10,.05][years]||.05;
+  const parf  = Math.min((car.arf||0)*parfPct, 30000);
+  const coeR  = years<10 ? ((10-years)/10)*coe : 0;
+  const mkt   = years<=7 ? 10000 : 5000;
+  const resid = parf + (years<10?coeR:0) + (years<10?mkt:0);
+  const dep   = price - resid;
+  const energy = isEV ? km*(car.consumption/100)*elec : (km/15)*petrol;
+  const run   = car.roadTax + (isEV?insEv:insHyb) + (isEV?svcEv:svcHyb) + park + energy;
+  return { price, resid, dep, annualDep:dep/years, run, total:dep+run*years, annualCost:(dep+run*years)/years, parf, coeR, energy };
+}
+
+const fmt  = v => v==null?'—':'$'+Math.round(v).toLocaleString();
+const fmtK = v => '$'+(v/1000).toFixed(1)+'k';
+
+// ═══════════════════════════════════════
+// NAVIGATION — clean registry pattern
+// ═══════════════════════════════════════
+const TABS = ['command','compare','own','market','deal','intel'];
+const RENDERS = {
+  command: renderCommand, compare: renderCompare,
+  own: renderOwn, market: () => { renderMarket(); autoFetchCOE(); },
+  deal: calcBridge, intel: ()=>{},
+};
+
+function nav(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const on = TABS[i]===id;
+    t.classList.toggle('on',on);
+    t.setAttribute('aria-selected',String(on));
+  });
+  document.querySelectorAll('.sec').forEach(s =>
+    s.classList.toggle('on', s.id==='sec-'+id)
+  );
+  RENDERS[id]?.();
+  labelTables();
+}
+
+// ═══════════════════════════════════════
+// COMMAND
+// ═══════════════════════════════════════
+function renderCommand() {
+  const ranked = CARS.map(c=>({c,s:score(c)})).sort((a,b)=>b.s.tot-a.s.tot);
+  const {c:top, s} = ranked[0];
+  const tco = getTCO(top,7);
+
+  document.getElementById('hdr-badges').innerHTML =
+    `<span class="u-xs u-muted">Cat B COE $126,236 · Next bid 20 May · Tesla deal 2d</span>`;
+
+  document.getElementById('hero-card').innerHTML = `
+    <div class="hero" role="region">
+      <p class="hero-eyebrow">Current Best Available</p>
+      <h1 class="hero-title">${top.name}</h1>
+      <p class="u-sm u-dim mt-2">${fmt(top.expo||top.b6)} · ${top.seats}-seat · Road tax ${fmt(top.roadTax)}/yr</p>
+      <div class="u-row u-wrap mt-2" style="gap:var(--sp-3)">
+        <div style="flex:1;min-width:160px">
+          <div class="u-between u-sm">
+            <span class="u-bold" style="color:${s.col}">Score ${s.tot}/100</span>
+            <span class="chip chip-success">${s.lbl}</span>
+          </div>
+          <div class="score-track mt-2"><div class="score-fill" style="width:${s.tot}%;background:${s.col}"></div></div>
+        </div>
+      </div>
+      <p class="u-xs u-dim mt-3">Annual ownership ~${fmtK(tco.annualCost)} · Dep ~${fmtK(tco.annualDep)}/yr · Running ~${fmtK(tco.run)}/yr</p>
+      <div class="u-row u-wrap mt-4" style="gap:var(--sp-2)">
+        <a class="btn btn-primary" href="tel:+6598505206">📞 Call Ranee</a>
+        <button class="btn btn-ghost" onclick="nav('compare')">Compare All →</button>
+      </div>
+    </div>`;
+
+  const today=new Date(), next=new Date('2026-05-20');
+  const dBid=Math.max(0,Math.round((next-today)/86400000));
+  const dT=Math.max(0,Math.round((new Date('2026-05-19')-today)/86400000));
+  document.getElementById('signals').innerHTML=`
+    <div class="sig">
+      <p class="sig-val">${fmtK(S.coe)}</p>
+      <p class="sig-lbl">Cat B COE</p>
+      <p class="sig-trend">↑ ${COE_HISTORY.updated}</p>
+    </div>
+    <div class="sig">
+      <p class="sig-val">${dBid}d</p>
+      <p class="sig-lbl">COE Bid</p>
+      <p class="sig-trend">Results 20 May</p>
+    </div>
+    <div class="sig">
+      <p class="sig-val" style="color:var(--color-tesla)">${dT}d</p>
+      <p class="sig-lbl">Tesla Deal</p>
+      <p class="sig-trend">Expires 19 May</p>
+    </div>`;
+
+  document.getElementById('actions').innerHTML = `
+    <div class="action action-urgent">
+      <div class="action-icon">⚡</div>
+      <div><p class="action-title">Call Tesla NOW — deal expires 19 May (+65 9184 1638)</p><p class="action-body">Guaranteed COE back. 1.28% rate confirmed. $30k EV rebate valid this year only — forfeited if deferred to 2027. Limited units. If road tax is acceptable with the deal economics, this window is real.</p></div>
+    </div>
+    <div class="action action-urgent">
+      <div class="action-icon">📞</div>
+      <div><p class="action-title">Confirm IONIQ 9 Demo 6s availability — Ranee +65 9850 5206</p><p class="action-body">If Tesla road tax remains a blocker, the Demo 6s at $299,999 (6-seat) is the current top-ranked non-Tesla option. Confirm mileage and price before next COE round.</p></div>
+    </div>
+    <div class="action action-urgent">
+      <div class="action-icon">🏦</div>
+      <div><p class="action-title">Apply SCB CashOne now — 3% cashback expires 30 Jun</p><p class="action-body">1.08% flat + new-client cashback. Apply via SingSaver for promo code. Get in-principle approval; draw down at S&P only. UOB 2% rebate expires 31 May.</p></div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// COMPARE
+// ═══════════════════════════════════════
+function renderCompare() {
+  const ranked = CARS.map(c=>({c,s:score(c)})).sort((a,b)=>b.s.tot-a.s.tot);
+  document.getElementById('leaderboard').innerHTML = ranked.map((r,i) => {
+    const {c,s} = r;
+    const t = getTCO(c,7);
+    const dims = [{l:'Financial',v:s.fin,col:'var(--color-primary-lt)'},{l:'Road Tax',v:s.rt,col:s.rt>=80?'var(--color-success)':s.rt>=40?'var(--color-warning)':'var(--color-danger)'},{l:'Timing',v:s.tim,col:'var(--color-primary-lt)'},{l:'Family',v:s.fam,col:'var(--color-primary-lt)'},{l:'Brand',v:s.brd,col:'var(--color-warning)'}];
+    return `<div class="lb" id="lb-${c.id}" onclick="toggleLb('${c.id}')" role="button" aria-expanded="false">
+      <div class="lb-row">
+        <div class="lb-rank u-muted u-bold">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <p class="lb-name">${c.name}</p>
+          <p class="lb-sub">${c.seats}s · ${c.type} · ${fmt(c.roadTax)}/yr</p>
+        </div>
+        <div style="flex:0 0 72px;text-align:right">
+          <p class="lb-score" style="color:${s.col}">${s.tot}</p>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${s.tot}%;background:${s.col}"></div></div>
+          <p class="lb-lbl" style="color:${s.col}">${s.lbl}</p>
+        </div>
+      </div>
+      <div class="lb-detail">
+        <div class="u-stack-2 mb-3">
+          ${dims.map(d=>`<div class="u-row" style="gap:8px"><span class="u-xs u-dim" style="width:66px;flex:0 0 66px">${d.l}</span><div class="cost-track" style="height:3px"><div class="cost-fill" style="width:${d.v}%;background:${d.col}"></div></div><span class="u-xs u-mono u-bold" style="width:22px;text-align:right">${d.v}</span></div>`).join('')}
+        </div>
+        <div class="u-grid-2" style="gap:4px">
+          <div class="u-between" style="padding:4px 0;border-bottom:1px solid var(--border)"><span class="u-xs u-dim">Buy price</span><span class="u-mono u-bold u-xs">${fmt(c.expo||c.b6||c.list)}</span></div>
+          <div class="u-between" style="padding:4px 0;border-bottom:1px solid var(--border)"><span class="u-xs u-dim">Annual TCO</span><span class="u-mono u-bold u-xs">${fmtK(t.annualCost)}</span></div>
+          <div class="u-between" style="padding:4px 0;border-bottom:1px solid var(--border)"><span class="u-xs u-dim">Annual dep</span><span class="u-mono u-xs">${fmtK(t.annualDep)}</span></div>
+          <div class="u-between" style="padding:4px 0;border-bottom:1px solid var(--border)"><span class="u-xs u-dim">Running/yr</span><span class="u-mono u-xs">${fmtK(t.run)}</span></div>
+          <div class="u-between" style="padding:4px 0"><span class="u-xs u-dim">Road tax</span><span class="u-mono u-xs ${c.roadTax>2000?'u-danger':''}">${fmt(c.roadTax)}</span></div>
+          <div class="u-between" style="padding:4px 0"><span class="u-xs u-dim">Residual 7yr</span><span class="u-mono u-xs">${fmtK(t.resid)}</span></div>
+        </div>
+        <p class="u-xs u-dim mt-2 u-lh">${c.notes}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  const sorted = [...CARS].map(c=>({c,t:getTCO(c,7)})).sort((a,b)=>a.t.annualCost-b.t.annualCost);
+  const maxC   = Math.max(...sorted.map(r=>r.t.annualCost));
+  document.getElementById('cost-bars').innerHTML = sorted.map(r => {
+    const col = r.t.annualCost<30000?'var(--color-success)':r.t.annualCost<36000?'var(--color-warning)':'var(--color-danger)';
+    return `<div class="cost-row"><span class="cost-name">${r.c.short}</span><div class="cost-track"><div class="cost-fill" style="width:${(r.t.annualCost/maxC)*100}%;background:${col}"></div></div><span class="cost-val" style="color:${col}">${fmtK(r.t.annualCost)}</span></div>`;
+  }).join('');
+}
+
+function toggleLb(id) {
+  const el = document.getElementById('lb-'+id);
+  const open = !el.classList.contains('open');
+  document.querySelectorAll('.lb.open').forEach(e=>{e.classList.remove('open');e.setAttribute('aria-expanded','false')});
+  if(open){el.classList.add('open');el.setAttribute('aria-expanded','true');}
+}
+
+// ═══════════════════════════════════════
+// OWNERSHIP
+// ═══════════════════════════════════════
+let tcoChart=null;
+
+function onScenario() {
+  S.coe  = +document.getElementById('s-coe').value;
+  S.hold = +document.getElementById('s-hold').value;
+  S.km   = +document.getElementById('s-km').value;
+  document.getElementById('v-coe').textContent  = '$'+S.coe.toLocaleString();
+  document.getElementById('v-hold').textContent = S.hold+' years';
+  document.getElementById('v-km').textContent   = S.km.toLocaleString();
+  buildTCOChart();
+  buildBreakdown();
+}
+
+function renderOwn() { onScenario(); renderDepTable(); }
+
+function buildTCOChart() {
+  if(tcoChart){tcoChart.destroy();tcoChart=null;}
+  const ctx = document.getElementById('tco-chart')?.getContext('2d');
+  if(!ctx) return;
+  const rows = [...CARS].map(c=>({c,t:getTCO(c,S.hold)})).sort((a,b)=>a.t.annualCost-b.t.annualCost);
+  tcoChart = new Chart(ctx,{type:'bar',data:{labels:rows.map(r=>r.c.short),datasets:[{label:'Annual TCO',data:rows.map(r=>Math.round(r.t.annualCost)),backgroundColor:rows.map(r=>r.t.annualCost<30000?'rgba(16,185,129,.7)':r.t.annualCost<36000?'rgba(245,158,11,.7)':'rgba(239,68,68,.7)'),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#3B4F6B',font:{size:10,family:'Inter'}},grid:{display:false},border:{display:false}},y:{ticks:{color:'#3B4F6B',font:{size:10,family:'Inter'},callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'#1C2840'},border:{display:false}}}}});
+  const best = rows[0];
+  document.getElementById('scenario-note').textContent = `Lowest: ${best.c.short} ${fmtK(best.t.annualCost)}/yr · ${S.hold}yr hold · COE $${(S.coe/1000).toFixed(0)}k · ${(S.km/1000).toFixed(0)}k km/yr`;
+}
+
+function buildBreakdown() {
+  const best = [...CARS].map(c=>({c,t:getTCO(c,S.hold)})).sort((a,b)=>a.t.annualCost-b.t.annualCost)[0];
+  document.getElementById('own-label').textContent = best.c.name;
+  const t = best.t;
+  const rows = [['Purchase price',fmt(t.price),''],['Residual value ('+S.hold+'yr)',fmt(t.resid),'u-success'],['Total depreciation',fmt(t.dep),''],['Annual depreciation',fmtK(t.annualDep),''],['Annual running costs',fmtK(t.run),'']];
+  document.getElementById('own-breakdown').innerHTML = `<div class="u-stack-1">${rows.map(([l,v,c])=>`<div class="u-between" style="padding:7px 0;border-bottom:1px solid var(--border)"><span class="u-sm">${l}</span><span class="u-mono u-bold u-sm ${c}">${v}</span></div>`).join('')}<div class="u-between" style="padding:9px 0"><span class="u-md u-bold">Annual ownership</span><span class="u-mono u-heavy u-md u-success">${fmtK(t.annualCost)}</span></div></div>`;
+}
+
+function renderDepTable() {
+  const price=264999, arf=50000, coe=S.coe;
+  const pcts=[,.30,.30,.30,.30,.30,.25,.20,.15,.10,.05];
+  document.getElementById('dep-table').innerHTML = [1,2,3,4,5,6,7,8,9,10].map((yr,i)=>{
+    const p=pcts[yr], parf=Math.min(arf*p,30000);
+    const coeR=yr<10?((10-yr)/10)*coe:0, mkt=yr<=7?10000:5000;
+    const resid=parf+(yr<10?coeR:0)+(yr<10?mkt:0);
+    const dep=(price-resid)/yr;
+    const col=dep<28000?'var(--color-success)':dep<35000?'var(--color-warning)':'var(--color-danger)';
+    return `<tr class="${yr===7?'tr-accent':''} ${i>=4?'tr-hide':''}">
+      <td data-label="Hold">${yr}yr${yr===7?' ⭐':''}</td><td data-label="PARF %">${(p*100).toFixed(0)}%</td>
+      <td class="right u-mono u-success" data-label="PARF">${fmt(parf)}</td>
+      <td class="right u-mono" data-label="COE Val">${coeR>0?fmt(coeR):'—'}</td>
+      <td class="right u-mono u-bold" data-label="Residual">${fmt(resid)}</td>
+      <td class="right u-mono u-bold" data-label="Annual Dep" style="color:${col}">${fmtK(dep)}</td></tr>`;
+  }).join('');
+}
+
+function toggleRows(btn) {
+  const hidden = [...document.querySelectorAll('#dep-table .tr-hide')];
+  const open   = hidden.length > 0;
+  hidden.forEach(r=>{r.classList.remove('tr-hide');r.classList.add('tr-shown')});
+  if(!open) document.querySelectorAll('#dep-table .tr-shown').forEach(r=>{r.classList.add('tr-hide');r.classList.remove('tr-shown')});
+  btn.textContent = open ? '▴ Show less' : '▾ Show all 10 years';
+}
+
+// ═══════════════════════════════════════
+// MARKET
+// ═══════════════════════════════════════
+let coeChart=null;
+function renderMarket() {
+  buildCOE();
+  buildPromos();
+  // Price inputs
+  const pi = document.getElementById('price-inputs');
+  if(pi) pi.innerHTML = `<div class="form-grid">` + CARS.map(c=>`<div><label class="f-label">${c.short}</label><input type="number" id="cp-${c.id}" placeholder="Leave blank if not"></div>`).join('') + `</div>`;
+}
+
+function buildCOE() {
+  if(coeChart){coeChart.destroy();coeChart=null;}
+  const ctx=document.getElementById('coe-chart')?.getContext('2d');
+  if(!ctx) return;
+  const bids = COE_HISTORY.bids;
+  const labels = [...bids.map(b=>b.label), 'Forecast'];
+  const actuals = [...bids.map(b=>b.value), null];
+  const latest  = bids[bids.length-1]?.value || S.coe;
+  const forecast = bids.map((_,i)=> i===bids.length-1 ? latest : null).concat([Math.round(latest*1.02)]);
+  coeChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Cat B',data:actuals,borderColor:'var(--color-primary)',backgroundColor:'rgba(37,99,235,.1)',tension:.35,pointRadius:4,pointBackgroundColor:'var(--color-primary)',fill:true,borderWidth:2},
+    {label:'Forecast',data:forecast,borderColor:'var(--color-warning)',borderDash:[5,4],backgroundColor:'rgba(245,158,11,.05)',tension:.35,pointRadius:3,fill:true,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#3B4F6B',font:{size:10,family:'Inter'}}}},scales:{x:{ticks:{color:'#3B4F6B',font:{size:9,family:'Inter'}},grid:{color:'#1C2840'},border:{display:false}},y:{ticks:{color:'#3B4F6B',font:{size:9,family:'Inter'},callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'#1C2840'},border:{display:false}}}}});
+}
+
+function buildPromos() {
+  const today=new Date();
+  document.getElementById('promo-list').innerHTML = PROMOS.map(p=>{
+    const expired=new Date(p.validUntil)<today;
+    const dLeft=Math.max(0,Math.round((new Date(p.validUntil)-today)/86400000));
+    const total=p.perks.reduce((s,pk)=>s+pk.v,0);
+    const priceRows=Object.entries(p.prices).map(([cid,pr])=>{const car=CARS.find(c=>c.id===cid);return car?`<div class="u-between u-sm" style="padding:3px 0;border-bottom:1px solid var(--border)"><span>${car.short}</span><span class="u-mono">${fmt(pr)}</span><span class="u-mono u-success">→ ${fmt(pr-total)} net</span></div>`:''}).join('');
+    const cardClass = p.id.startsWith('tesla')&&!expired ? 'promo-card tesla' : expired ? 'promo-card' : 'promo-card active';
+    return `<div class="${cardClass}">
+      <div class="u-between u-wrap mb-3" style="gap:var(--sp-2)">
+        <div><p class="u-md u-bold">${p.source}</p><p class="u-xs u-dim">${p.date} · ${p.interest}%</p></div>
+        <div class="u-row" style="gap:var(--sp-1)">
+          <span class="u-bold u-sm ${expired?'u-danger':'u-warning'}">${expired?'Expired':dLeft+'d left'}</span>
+          <span class="chip ${expired?'chip-danger':p.id.startsWith('tesla')?'chip-tesla':'chip-warning'}">${expired?'EXPIRED':'ACTIVE'}</span>
+        </div>
+      </div>
+      <div class="u-stack-1 mb-2">${priceRows}</div>
+      <p class="u-xs u-muted mt-2">${p.perks.map(pk=>pk.l+' '+fmt(pk.v)).join(' · ')} = ${fmt(total)}</p>
+      ${p.notes?`<p class="u-xs u-muted mt-1">${p.notes}</p>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// COE AUTO-FETCH — three-tier fallback
+// Tier 1: LTA DataMall direct (works in Claude artifact, blocked by CORS on Netlify)
+// Tier 2: data.gov.sg CORS-safe API (no key needed, works everywhere)
+// Tier 3: Manual entry (always works)
+// For full Netlify automation: deploy netlify/functions/coe.js (see RENDERS.intel)
+// ═══════════════════════════════════════
+const LTA_KEY     = '';   // Free key: datamall.lta.gov.sg → Request Access (5 min signup)
+const NETLIFY_FN  = '';   // Set to '/.netlify/functions/coe' after deploying the function
+const DATAGOV_ID  = 'd_69b3380ad7e51aff3a7dcc84eba52b8a'; // COE dataset on data.gov.sg
+
+async function fetchLatestCOE() {
+  // Tier 1 — LTA DataMall direct (works in Claude, requires LTA_KEY)
+  if(LTA_KEY || NETLIFY_FN) {
+    const url = NETLIFY_FN || 'https://datamall2.mytransport.sg/ltaodataservice/COEResult';
+    const headers = NETLIFY_FN ? {} : { AccountKey: LTA_KEY, Accept: 'application/json' };
+    try {
+      const r = await fetch(url, { headers });
+      const d = await r.json();
+      const catB = (d.value||[]).find(x => x.vehicle_class === 'Category B');
+      if(catB) return { value:+catB.premium, label:`${catB.month} Bid ${catB.bidding_no}` };
+    } catch(e) { console.info('LTA direct blocked (CORS). Trying data.gov.sg…'); }
+  }
+
+  // Tier 2 — data.gov.sg (CORS-safe, no key, parses CSV for latest Cat B)
+  try {
+    const poll = await fetch(
+      `https://api-production.data.gov.sg/v2/public/api/datasets/${DATAGOV_ID}/poll-download`,
+      { method:'GET' }
+    );
+    const { url } = await poll.json();
+    const csv  = await (await fetch(url)).text();
+    const rows = csv.split('\n').slice(1)
+      .map(r => r.split(','))
+      .filter(r => r[2]?.replace(/"/g,'').trim() === 'Category B' && r[5]?.trim());
+    const last = rows[rows.length - 1];
+    if(last) return {
+      value: parseInt(last[5].replace(/"/g,'')),
+      label: `${last[0].replace(/"/g,'').trim()} Bid ${last[1].replace(/"/g,'').trim()}`
+    };
+  } catch(e) { console.info('data.gov.sg fetch failed. Use manual entry.', e.message); }
+
+  return null; // triggers manual entry UI
+}
+
+async function autoFetchCOE() {
+  const statusEl = document.getElementById('coe-fetch-status');
+  if(statusEl) { statusEl.textContent = 'Fetching…'; statusEl.className = 'u-xs u-primary'; }
+  const result = await fetchLatestCOE();
+  if(result) {
+    document.getElementById('coe-new-val').value = result.value;
+    document.getElementById('coe-new-lbl').value = result.label;
+    if(statusEl) { statusEl.textContent = `✓ Got $${result.value.toLocaleString()} (${result.label}) — tap Update & Save to confirm`; statusEl.className = 'u-xs u-success'; }
+  } else {
+    if(statusEl) { statusEl.textContent = 'Auto-fetch unavailable — enter manually below, or add your LTA API key above.'; statusEl.className = 'u-xs u-warning'; }
+  }
+}
+
+async function updateCOE() {
+  const val  = +document.getElementById('coe-new-val').value;
+  const lbl  = document.getElementById('coe-new-lbl').value.trim();
+  if(!val || val < 80000 || val > 200000) {
+    alert('Enter a valid Cat B COE premium between $80,000 and $200,000.');
+    return;
+  }
+  const label = lbl || `Update ${new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'2-digit'})}`;
+  COE_HISTORY.bids.push({ label, value: val });
+  COE_HISTORY.updated = new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'});
+  S.coe = val;
+
+  await Store.set('coe', COE_HISTORY);
+
+  // Reset form
+  document.getElementById('coe-new-val').value = '';
+  document.getElementById('coe-new-lbl').value = '';
+
+  // Update slider to match
+  const slider = document.getElementById('s-coe');
+  if(slider) { slider.value = val; document.getElementById('v-coe').textContent = '$'+val.toLocaleString(); }
+
+  refreshAll();
+  document.getElementById('coe-updated').textContent = `Last updated: ${COE_HISTORY.updated} · Latest: ${fmt(val)}`;
+}
+
+// Re-renders whichever tabs are currently active or cached
+function refreshAll() {
+  const active = document.querySelector('.sec.on')?.id?.replace('sec-','');
+  if(active) RENDERS[active]?.();
+  // Always rebuild the signal tiles since they show COE
+  const sigEl = document.getElementById('signals');
+  if(sigEl) renderSignals();
+}
+
+function renderSignals() {
+  const today=new Date(), next=new Date('2026-05-20');
+  const dBid=Math.max(0,Math.round((next-today)/86400000));
+  const dT=Math.max(0,Math.round((new Date('2026-05-19')-today)/86400000));
+  const el=document.getElementById('signals');
+  if(!el) return;
+  el.innerHTML=`
+    <div class="sig"><p class="sig-val u-danger">${fmtK(S.coe)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend u-danger">↑ Updated ${COE_HISTORY.updated}</p></div>
+    <div class="sig"><p class="sig-val u-warning">${dBid}d</p><p class="sig-lbl">COE Bid</p><p class="sig-trend">20 May</p></div>
+    <div class="sig" style="background:var(--color-tesla-bg);border-color:rgba(204,0,0,.3)"><p class="sig-val u-tesla">${dT}d</p><p class="sig-lbl">Tesla Deal</p><p class="sig-trend u-tesla">Exp 19 May</p></div>`;
+}
+
+
+// ═══════════════════════════════════════
+async function doScan(file) {
+  if(!file) return;
+  const btn=document.getElementById('mkt-scan-btn'), st=document.getElementById('scan-status');
+  btn.textContent='⏳'; btn.disabled=true;
+  st.style.color='var(--color-primary-lt)'; st.textContent='Extracting…';
+  try {
+    const data = await extractPromo(file);
+    prefillForm(data);
+    st.style.color='var(--color-success)'; st.textContent='Extracted — review below';
+  } catch(e) {
+    st.style.color='var(--color-danger)'; st.textContent='Could not extract — fill in manually';
+  }
+  btn.textContent='📷 Scan Flyer'; btn.disabled=false;
+  document.getElementById('mkt-scan-file').value='';
+}
+
+async function handleCmdScan(file) {
+  if(!file) return;
+  const btn=document.getElementById('cmd-scan-btn'), st=document.getElementById('cmd-scan-status');
+  btn.textContent='⏳ Extracting…'; btn.disabled=true;
+  try {
+    const data = await extractPromo(file);
+    prefillForm(data);
+    st.style.color='var(--color-success)'; st.textContent='✓ Extracted — opening Market';
+    setTimeout(()=>nav('market'), 700);
+  } catch(e) {
+    st.style.color='var(--color-danger)'; st.textContent='Could not extract — fill in manually in Market';
+  }
+  btn.textContent='📷 Scan Dealer Flyer'; btn.disabled=false;
+  document.getElementById('cmd-scan-file').value='';
+}
+
+async function extractPromo(file) {
+  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+  const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'Extract Singapore car dealer promotion. Return ONLY valid JSON, no markdown: {"source":"","date":"","validUntil":"","interest":null,"prices":{"Car Model":price},"perks":[{"l":"label","v":value}],"notes":""}'}]}]})});
+  const d = await resp.json();
+  return JSON.parse((d.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
+}
+
+function prefillForm(p) {
+  if(p.source) document.getElementById('p-source').value=p.source;
+  if(p.validUntil) document.getElementById('p-valid').value=p.validUntil;
+  if(p.interest) document.getElementById('p-rate').value=p.interest;
+  if(p.notes) document.getElementById('p-notes').value=p.notes;
+  if(p.perks?.length) document.getElementById('perk-rows').innerHTML=p.perks.map(pk=>`<div class="u-row"><input value="${pk.l}" class="pk-lbl" style="flex:2"><input type="number" value="${pk.v}" class="pk-val" style="flex:1;margin-left:6px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;min-width:36px;min-height:44px">✕</button></div>`).join('');
+  if(p.prices) CARS.forEach(c=>{const el=document.getElementById('cp-'+c.id);if(el&&(p.prices[c.short]||p.prices[c.name]))el.value=p.prices[c.short]||p.prices[c.name];});
+}
+
+function addPerkRow() {
+  const r=document.createElement('div'); r.className='u-row';
+  r.innerHTML=`<input placeholder="Perk description" class="pk-lbl" style="flex:2"><input type="number" placeholder="SGD value" class="pk-val" style="flex:1;margin-left:6px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;min-width:36px;min-height:44px">✕</button>`;
+  document.getElementById('perk-rows').appendChild(r);
+}
+
+function savePromo() {
+  const source=document.getElementById('p-source').value.trim();
+  if(!source){alert('Source required.');return;}
+  const prices={};
+  CARS.forEach(c=>{const v=document.getElementById('cp-'+c.id)?.value;if(v&&+v>0)prices[c.id]=+v;});
+  if(!Object.keys(prices).length){alert('Enter at least one quoted price.');return;}
+  const perks=[];
+  document.querySelectorAll('#perk-rows .pk-lbl').forEach((el,i)=>{const v=+document.querySelectorAll('#perk-rows .pk-val')[i]?.value;if(el.value&&v)perks.push({l:el.value,v});});
+  PROMOS.unshift({id:'p'+Date.now(),source,date:'',validUntil:document.getElementById('p-valid').value,interest:+document.getElementById('p-rate').value||null,prices,perks,notes:document.getElementById('p-notes').value,active:true});
+  // Persist user-added promos (exclude hardcoded ones starting with 'tesla-' or 'expo-')
+  const userPromos = PROMOS.filter(p => !p.id.startsWith('tesla-') && !p.id.startsWith('expo-'));
+  Store.set('promos', userPromos);
+  clearForm(); buildPromos();
+}
+
+function clearForm() {
+  ['p-source','p-valid','p-rate','p-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  CARS.forEach(c=>{const el=document.getElementById('cp-'+c.id);if(el)el.value='';});
+  document.getElementById('perk-rows').innerHTML=`<div class="u-row"><input placeholder="Perk description" class="pk-lbl" style="flex:2"><input type="number" placeholder="SGD value" class="pk-val" style="flex:1;margin-left:6px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;min-width:36px;min-height:44px">✕</button></div>`;
+}
+
+// ═══════════════════════════════════════
+// BRIDGE
+// ═══════════════════════════════════════
+function calcBridge() {
+  const price=+document.getElementById('b-price')?.value||264999;
+  const ltv=+document.getElementById('b-ltv')?.value||60;
+  const carR=+document.getElementById('b-rate')?.value||1.28;
+  const carT=+document.getElementById('b-tenure')?.value||7;
+  const minP=+document.getElementById('b-min')?.value||50;
+  const inc=+document.getElementById('b-incentives')?.value||6330;
+  const plR=+document.getElementById('b-pl-rate')?.value||1.08;
+  const plT=+document.getElementById('b-pl-tenure')?.value||3;
+  const maxL=price*(ltv/100), minL=price*(minP/100);
+  const bridge=Math.max(0,maxL-minL), down=price-maxL;
+  const baseI=maxL*(carR/100)*carT, dealI=minL*(carR/100)*carT, plI=bridge*(plR/100)*plT;
+  const saving=baseI-(dealI+plI);
+  const works=bridge>0&&(plR*plT)<(carR*carT);
+  const el=document.getElementById('bridge-card');
+  if(!el) return;
+  el.innerHTML=`<div class="verdict ${works?'verdict-works':'verdict-fails'}">
+    <h2 class="verdict-title">${!bridge?'⚠ No Bridge Room':works?'✅ Bridge Viable':'❌ Not Viable at These Rates'}</h2>
+    <p class="u-sm u-dim mt-2">${!bridge?'Minimum loan equals MAS cap. Negotiate the floor downward.':works?`Dealer loan ${minP}% (${fmt(minL)}) preserves all incentives. Bridge ${fmt(bridge)} via PL at ${plR}%.`:`PL total (${plR}%×${plT}yr = ${(plR*plT).toFixed(2)}%) exceeds car loan (${carR}%×${carT}yr = ${(carR*carT).toFixed(2)}%). Do not bridge.`}</p>
+    <div class="vt-grid">
+      <div class="vt"><p class="vt-val" style="color:${saving>0?'var(--color-success)':'var(--color-danger)'}">${fmt(Math.abs(saving))}</p><p class="vt-lbl">${saving>0?'Saved':'Extra Cost'}</p></div>
+      <div class="vt"><p class="vt-val">${fmt(bridge)}</p><p class="vt-lbl">Bridge</p></div>
+      <div class="vt"><p class="vt-val">${fmt(down)}</p><p class="vt-lbl">Down Payment</p></div>
+      <div class="vt"><p class="vt-val u-success">${fmt(inc)}</p><p class="vt-lbl">Incentives</p></div>
+    </div>
+    <div class="u-between u-xs u-dim mt-2 pt-3 gap-line u-wrap" style="gap:var(--sp-3)">
+      <span>Baseline: ${fmt(maxL)} @ ${carR}%×${carT}yr = ${fmt(baseI)}</span>
+      <span>With bridge: ${fmt(dealI+plI)} total interest</span>
+    </div>
+    <p class="u-xs u-muted mt-2">Dealer minimum floor is commercial policy, not MAS regulation — negotiable. Every 5% reduction adds ~${fmt(price*.05*((carR*carT-plR*plT)/100))}.</p>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// EXPAND
+// ═══════════════════════════════════════
+function toggleExpand(id,btn){
+  const el=document.getElementById(id), open=!el.classList.contains('open');
+  el.classList.toggle('open',open); btn.classList.toggle('open',open);
+  btn.setAttribute('aria-expanded',String(open));
+}
+
+// ═══════════════════════════════════════
+// TABLE LABELS (mobile)
+// ═══════════════════════════════════════
+function labelTables() {
+  if(window.innerWidth>640) return;
+  document.querySelectorAll('.overflow-x table').forEach(tbl=>{
+    const ths=[...tbl.querySelectorAll('thead th')].map(t=>t.textContent.trim().slice(0,13));
+    if(!ths.length) return;
+    tbl.querySelectorAll('tbody tr').forEach(row=>[...row.querySelectorAll('td')].forEach((td,i)=>{if(ths[i])td.setAttribute('data-label',ths[i]);}));
+    const rows=[...tbl.querySelectorAll('tbody tr')];
+    if(rows.length>=5) rows.slice(4).forEach(r=>r.classList.add('tr-hide'));
+  });
+}
+
+// ═══════════════════════════════════════
+// HOME SCREEN ICON
+// ═══════════════════════════════════════
+function generateIcon() {
+  const c=document.createElement('canvas'); c.width=c.height=180;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(90,90,20,90,90,130); g.addColorStop(0,'#131929'); g.addColorStop(1,'#07090E');
+  ctx.fillStyle=g; ctx.fillRect(0,0,180,180);
+  ctx.strokeStyle='rgba(37,99,235,.4)'; ctx.lineWidth=4; ctx.strokeRect(8,8,164,164);
+  ctx.fillStyle='#2563EB';
+  ctx.beginPath(); ctx.moveTo(20,30); ctx.lineTo(160,30); ctx.lineTo(160,52); ctx.quadraticCurveTo(130,52,108,76); ctx.quadraticCurveTo(96,64,90,62); ctx.quadraticCurveTo(84,64,72,76); ctx.quadraticCurveTo(50,52,20,52); ctx.closePath(); ctx.fill();
+  ctx.fillRect(80,62,20,90);
+  ctx.fillStyle='#EDF0F7'; ctx.font='700 18px Inter,Arial,sans-serif'; ctx.textAlign='center'; ctx.fillText('SG CAR IQ',90,175);
+  const link=document.getElementById('apple-icon'); if(link) link.href=c.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════
+// INIT — async: load persisted data first, then render
+// ═══════════════════════════════════════
+async function init() {
+  // Load saved COE history
+  try {
+    const saved = await Store.get('coe');
+    if(saved?.bids?.length) {
+      COE_HISTORY = saved;
+      S.coe = saved.bids[saved.bids.length-1].value;
+      // Sync slider
+      const sl = document.getElementById('s-coe');
+      if(sl) { sl.value = S.coe; document.getElementById('v-coe').textContent = '$'+S.coe.toLocaleString(); }
+    }
+  } catch(e) {}
+
+  // Load user-added promos and merge in front of hardcoded ones
+  try {
+    const savedPromos = await Store.get('promos');
+    if(savedPromos?.length) PROMOS = [...savedPromos, ...PROMOS];
+  } catch(e) {}
+
+  // Render
+  renderCommand();
+  generateIcon();
+  labelTables();
+
+  // Update COE status label
+  const el = document.getElementById('coe-updated');
+  if(el) el.textContent = `Last updated: ${COE_HISTORY.updated} · Latest: ${fmt(S.coe)}`;
+}
+
+init();
+</script>
+</body>
+</html>
