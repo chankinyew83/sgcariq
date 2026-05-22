@@ -1072,9 +1072,12 @@ async function fetchLatestCOE() {
     const r = await fetch('/.netlify/functions/coe');
     const d = await r.json();
     if(d._error) { window._coeErr = d._error; return null; }
-    const catB = (d.value||[]).find(x => x.vehicle_class === 'Category B');
+    // New format from data.gov.sg function: { value: 126236, label: "2026-05 Bid 1" }
+    if(typeof d.value === 'number' && d.label) return { value: d.value, label: d.label };
+    // Legacy LTA format: { value: [{ vehicle_class, premium, month, bidding_no }] }
+    const catB = Array.isArray(d.value) && d.value.find(x => x.vehicle_class === 'Category B');
     if(catB) return { value:+catB.premium, label:`${catB.month} Bid ${catB.bidding_no}` };
-    window._coeErr = 'No Cat B data in response';
+    window._coeErr = 'Unexpected response format';
   } catch(e) {
     window._coeErr = e.message;
   }
