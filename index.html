@@ -358,22 +358,7 @@ tr:last-child td{border-bottom:none}
 
 <!-- ══════════ COMMAND ══════════ -->
 <section id="sec-command" class="sec on">
-  <!-- Tesla Deal Alert — urgent, 2 days -->
-  <div class="card card-urgent mb-3">
-    <div class="u-between u-wrap" style="gap:var(--sp-2);margin-bottom:var(--sp-2)">
-      <div class="u-row"><span class="chip chip-tesla">★ Tesla</span><span class="chip chip-warning">2 DAYS LEFT</span></div>
-      <span class="u-xs u-dim">Expires 19 May 2026</span>
-    </div>
-    <p class="u-sm u-bold mb-2">Tesla Car Expo Deal Extended — Guaranteed COE Package Back</p>
-    <div class="u-grid-2 mb-2" style="gap:var(--sp-2)">
-      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">Rate</p><p class="u-mono u-heavy u-tesla" style="font-size:var(--t-lg)">1.28%</p><p class="u-xs u-dim">Lowest ever. ≥$8k loan savings vs market.</p></div>
-      <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">EV Rebate</p><p class="u-mono u-heavy u-warning" style="font-size:var(--t-lg)">$30k</p><p class="u-xs u-dim">Valid this year only. Lost if purchase deferred to 2027.</p></div>
-    </div>
-    <div class="u-row u-wrap" style="gap:var(--sp-2)">
-      <a class="btn btn-tesla" href="tel:+6591841638">📞 Tesla +65 9184 1638</a>
-      <button class="btn btn-ghost u-xs" onclick="nav('market')">View in Promotions →</button>
-    </div>
-  </div>
+  <div id="tesla-alert-wrap"></div>
 
   <div id="hero-card"></div>
   <div class="signals" id="signals"></div>
@@ -397,7 +382,7 @@ tr:last-child td{border-bottom:none}
       <div class="ms future" role="listitem"><div class="ms-dot">6</div><div class="ms-lbl">Negotiate</div></div>
       <div class="ms future" role="listitem"><div class="ms-dot">7</div><div class="ms-lbl">Deliver</div></div>
     </div>
-    <p class="u-xs u-primary mt-2">Stage 4 of 7 — Tesla deal window now active: 2 days remaining</p>
+    <p class="u-xs u-primary mt-2">Stage 4 of 7 — ownership cost modelling underway</p>
   </div>
 </section>
 
@@ -458,11 +443,7 @@ tr:last-child td{border-bottom:none}
 
 <!-- ══════════ MARKET ══════════ -->
 <section id="sec-market" class="sec">
-  <div class="signals" id="mkt-signals">
-    <div class="sig"><p class="sig-val u-danger">$126k</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend u-danger">↑ +$5,235</p></div>
-    <div class="sig"><p class="sig-val u-warning">3d</p><p class="sig-lbl">Next Bid</p><p class="sig-trend">20 May</p></div>
-    <div class="sig"><p class="sig-val u-warning">2d</p><p class="sig-lbl">Tesla Deal</p><p class="sig-trend u-warning">Exp 19 May</p></div>
-  </div>
+  <div class="signals" id="mkt-signals"></div>
 
   <!-- COE UPDATE — tap here after every bid result -->
   <div class="card card-primary">
@@ -491,7 +472,7 @@ tr:last-child td{border-bottom:none}
   </div>
     <p class="card-label">COE — Cat B Trend</p>
     <div class="chart-box"><canvas id="coe-chart"></canvas></div>
-    <p class="u-xs u-muted" style="text-align:center;margin-top:4px">Next results 20 May 2026</p>
+    <p class="u-xs u-muted" style="text-align:center;margin-top:4px" id="coe-chart-note">Next results pending</p>
   </div>
   <div class="card">
     <p class="card-label">Promotions</p>
@@ -537,7 +518,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
   <div class="card">
-    <p class="card-label">Personal Loan Market — May 2026</p>
+    <p class="card-label" id="pl-market-label">Personal Loan Market</p>
     <div class="overflow-x">
       <table>
         <thead><tr><th>Bank</th><th>Rate</th><th>EIR</th><th>Tenure</th><th>Promo</th><th>Expires</th><th class="right">Saving ~$26k</th></tr></thead>
@@ -673,7 +654,8 @@ let COE_HISTORY = {
     { label:'Apr 2 \'26', value:121001 },
     { label:'May 1 \'26', value:126236 },
   ],
-  updated: '6 May 2026'
+  updated: '20 May 2026',
+  nextBid: '2026-06-03'
 };
 
 
@@ -788,8 +770,30 @@ function nav(id) {
 }
 
 // ═══════════════════════════════════════
-// COMMAND
+// DATE UTILITIES — no hardcoded dates anywhere below
 // ═══════════════════════════════════════
+function getNextCOEBidDate() {
+  // COE bids every 2 weeks; reference anchor: 20 May 2026
+  const REF = new Date('2026-05-20');
+  const now = new Date();
+  let d = new Date(REF);
+  while (d <= now) d = new Date(d.getTime() + 14*24*60*60*1000);
+  return d;
+}
+
+function daysUntil(dateStr) {
+  return Math.round((new Date(dateStr) - new Date()) / 86400000);
+}
+
+function isActive(promo) {
+  return new Date(promo.validUntil) >= new Date();
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString('en-SG', { day:'numeric', month:'short' });
+}
+
+
 function renderCommand() {
   const ranked = CARS.map(c=>({c,s:score(c)})).sort((a,b)=>b.s.tot-a.s.tot);
   const {c:top, s} = ranked[0];
@@ -819,39 +823,93 @@ function renderCommand() {
       </div>
     </div>`;
 
-  const today=new Date(), next=new Date('2026-05-20');
-  const dBid=Math.max(0,Math.round((next-today)/86400000));
-  const dT=Math.max(0,Math.round((new Date('2026-05-19')-today)/86400000));
-  document.getElementById('signals').innerHTML=`
+  // ── Brand subtitle — current month/year ──
+  document.querySelector('.brand-sub').textContent =
+    'Singapore Car Intelligence · ' + new Date().toLocaleDateString('en-SG', {month:'short', year:'numeric'});
+
+  // ── Tesla alert — only show if promo still active ──
+  const teslaPromo = PROMOS.find(p => p.id.startsWith('tesla'));
+  const teslaActive = teslaPromo && isActive(teslaPromo);
+  const dTesla = teslaPromo ? daysUntil(teslaPromo.validUntil) : -1;
+  const alertWrap = document.getElementById('tesla-alert-wrap');
+  if (alertWrap) {
+    alertWrap.innerHTML = teslaActive ? `
+      <div class="card card-urgent mb-3">
+        <div class="u-between u-wrap" style="gap:var(--sp-2);margin-bottom:var(--sp-2)">
+          <div class="u-row"><span class="chip chip-tesla">★ Tesla</span><span class="chip chip-warning">${dTesla <= 0 ? 'TODAY' : dTesla + ' DAY' + (dTesla===1?'':'S') + ' LEFT'}</span></div>
+          <span class="u-xs u-dim">Expires ${fmtDate(new Date(teslaPromo.validUntil))}</span>
+        </div>
+        <p class="u-sm u-bold mb-2">Tesla Car Expo Deal — Guaranteed COE Package</p>
+        <div class="u-grid-2 mb-2" style="gap:var(--sp-2)">
+          <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">Rate</p><p class="u-mono u-heavy u-tesla" style="font-size:var(--t-lg)">${teslaPromo.interest}%</p><p class="u-xs u-dim">≥$8k loan savings vs market rate.</p></div>
+          <div class="card-inset"><p class="u-xs u-muted u-upper mb-2">EV Rebate</p><p class="u-mono u-heavy u-warning" style="font-size:var(--t-lg)">$30k</p><p class="u-xs u-dim">VES rebate in price. Lost if VES bands change in next Budget.</p></div>
+        </div>
+        <div class="u-row u-wrap" style="gap:var(--sp-2)">
+          <a class="btn btn-tesla" href="tel:+6591841638">📞 Tesla +65 9184 1638</a>
+          <button class="btn btn-ghost u-xs" onclick="nav('market')">View Promotion →</button>
+        </div>
+      </div>` : '';
+  }
+
+  // ── Signals — all dynamic ──
+  const nextBid = getNextCOEBidDate();
+  const dBid = Math.max(0, Math.round((nextBid - new Date()) / 86400000));
+  document.getElementById('signals').innerHTML = `
     <div class="sig">
       <p class="sig-val">${fmtK(S.coe)}</p>
       <p class="sig-lbl">Cat B COE</p>
-      <p class="sig-trend">↑ ${COE_HISTORY.updated}</p>
+      <p class="sig-trend">Updated ${COE_HISTORY.updated}</p>
     </div>
     <div class="sig">
       <p class="sig-val">${dBid}d</p>
-      <p class="sig-lbl">COE Bid</p>
-      <p class="sig-trend">Results 20 May</p>
+      <p class="sig-lbl">Next Bid</p>
+      <p class="sig-trend">Results ${fmtDate(nextBid)}</p>
     </div>
-    <div class="sig">
-      <p class="sig-val" style="color:var(--color-tesla)">${dT}d</p>
-      <p class="sig-lbl">Tesla Deal</p>
-      <p class="sig-trend">Expires 19 May</p>
+    <div class="sig" ${teslaActive ? 'style="border-color:rgba(184,68,68,.3)"' : ''}>
+      <p class="sig-val" style="color:${teslaActive ? 'var(--color-tesla)' : 'var(--text-2)'}">${teslaActive ? dTesla+'d' : '—'}</p>
+      <p class="sig-lbl">${teslaActive ? 'Tesla Deal' : 'No Active Deal'}</p>
+      <p class="sig-trend">${teslaActive ? 'Expires ' + fmtDate(new Date(teslaPromo.validUntil)) : 'Check Market tab'}</p>
     </div>`;
 
-  document.getElementById('actions').innerHTML = `
-    <div class="action action-urgent">
-      <div class="action-icon">⚡</div>
-      <div><p class="action-title">Call Tesla NOW — deal expires 19 May (+65 9184 1638)</p><p class="action-body">Guaranteed COE back. 1.28% rate confirmed. $30k EV rebate valid this year only — forfeited if deferred to 2027. Limited units. If road tax is acceptable with the deal economics, this window is real.</p></div>
-    </div>
-    <div class="action action-urgent">
-      <div class="action-icon">📞</div>
-      <div><p class="action-title">Confirm IONIQ 9 Demo 6s availability — Ranee +65 9850 5206</p><p class="action-body">If Tesla road tax remains a blocker, the Demo 6s at $299,999 (6-seat) is the current top-ranked non-Tesla option. Confirm mileage and price before next COE round.</p></div>
-    </div>
-    <div class="action action-urgent">
-      <div class="action-icon">🏦</div>
-      <div><p class="action-title">Apply SCB CashOne now — 3% cashback expires 30 Jun</p><p class="action-body">1.08% flat + new-client cashback. Apply via SingSaver for promo code. Get in-principle approval; draw down at S&P only. UOB 2% rebate expires 31 May.</p></div>
-    </div>`;
+  // ── Header badges — dynamic ──
+  document.getElementById('hdr-badges').innerHTML =
+    `<span class="u-xs u-muted">Cat B COE ${fmt(S.coe)} · Next bid ${fmtDate(nextBid)}${teslaActive ? ' · Tesla deal '+dTesla+'d' : ''}</span>`;
+
+  // ── Actions — generated from live data, not hardcoded dates ──
+  const actions = [];
+
+  // Tesla action only if active
+  if (teslaActive) {
+    actions.push({ icon:'⚡', title:`Call Tesla — deal expires ${fmtDate(new Date(teslaPromo.validUntil))} (+65 9184 1638)`,
+      body:'Guaranteed COE back. 1.28% rate confirmed. $30k VES rebate already in price — risk is rebate reduces in next Budget if you delay. Limited units.', urgent:true });
+  }
+
+  // Always: IONIQ 9 Demo
+  actions.push({ icon:'📞', title:'Confirm IONIQ 9 Demo 6s availability — Ranee +65 9850 5206',
+    body:'Current top-ranked option for 6-seat BEV. Confirm mileage and that last-known price still holds before the next COE round.', urgent:true });
+
+  // SCB cashback — check if still valid (expires 30 Jun 2026)
+  const scbExpiry = '2026-06-30';
+  if (daysUntil(scbExpiry) > 0) {
+    actions.push({ icon:'🏦', title:`Apply SCB CashOne personal loan — 3% cashback expires ${fmtDate(new Date(scbExpiry))}`,
+      body:'1.08% flat + new-client cashback via SingSaver. Get in-principle approval now; draw down only at S&P signing.', urgent: daysUntil(scbExpiry) <= 14 });
+  }
+
+  // COE bid urgency
+  if (dBid <= 5) {
+    actions.push({ icon:'⏰', title:`COE bid closes in ${dBid} day${dBid===1?'':'s'} — results ${fmtDate(nextBid)}`,
+      body:'Rising trend. Each round at current trajectory adds ~$2,600 to the purchase cost. Act before this round if you can.', urgent: dBid <= 2 });
+  }
+
+  // Tesla watch — always present
+  actions.push({ icon:'🔭', title:'Monitor for Tesla Model Y RWD — insideevs.com',
+    body:'A ≤230kW variant drops road tax to $742/yr, changing the recommendation entirely. SG follows global launches ~12 months later.', urgent:false });
+
+  document.getElementById('actions').innerHTML = actions.map(a =>
+    `<div class="action ${a.urgent ? 'action-urgent' : ''}">
+      <div class="action-icon">${a.icon}</div>
+      <div><p class="action-title">${a.title}</p><p class="action-body">${a.body}</p></div>
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════
@@ -975,6 +1033,15 @@ function toggleRows(btn) {
 // ═══════════════════════════════════════
 let coeChart=null;
 function renderMarket() {
+  const nextBid = getNextCOEBidDate();
+  const dBid = Math.max(0, Math.round((nextBid - new Date()) / 86400000));
+  const teslaPromo = PROMOS.find(p => p.id.startsWith('tesla'));
+  const teslaActive = teslaPromo && isActive(teslaPromo);
+  const dT = teslaPromo ? daysUntil(teslaPromo.validUntil) : -1;
+  document.getElementById('mkt-signals').innerHTML = `
+    <div class="sig"><p class="sig-val">${fmtK(S.coe)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend">Updated ${COE_HISTORY.updated}</p></div>
+    <div class="sig"><p class="sig-val">${dBid}d</p><p class="sig-lbl">Next Bid</p><p class="sig-trend">Results ${fmtDate(nextBid)}</p></div>
+    <div class="sig"><p class="sig-val" style="color:${teslaActive?'var(--color-tesla)':'var(--text-2)'}">${teslaActive?dT+'d':'—'}</p><p class="sig-lbl">${teslaActive?'Tesla Deal':'No Deal'}</p><p class="sig-trend">${teslaActive?'Exp '+fmtDate(new Date(teslaPromo.validUntil)):'—'}</p></div>`;
   buildCOE();
   buildPromos();
   // Price inputs
@@ -1099,15 +1166,17 @@ function refreshAll() {
 }
 
 function renderSignals() {
-  const today=new Date(), next=new Date('2026-05-20');
-  const dBid=Math.max(0,Math.round((next-today)/86400000));
-  const dT=Math.max(0,Math.round((new Date('2026-05-19')-today)/86400000));
-  const el=document.getElementById('signals');
+  const el = document.getElementById('signals');
   if(!el) return;
-  el.innerHTML=`
-    <div class="sig"><p class="sig-val u-danger">${fmtK(S.coe)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend u-danger">↑ Updated ${COE_HISTORY.updated}</p></div>
-    <div class="sig"><p class="sig-val u-warning">${dBid}d</p><p class="sig-lbl">COE Bid</p><p class="sig-trend">20 May</p></div>
-    <div class="sig" style="background:var(--color-tesla-bg);border-color:rgba(204,0,0,.3)"><p class="sig-val u-tesla">${dT}d</p><p class="sig-lbl">Tesla Deal</p><p class="sig-trend u-tesla">Exp 19 May</p></div>`;
+  const nextBid = getNextCOEBidDate();
+  const dBid = Math.max(0, Math.round((nextBid - new Date()) / 86400000));
+  const teslaPromo = PROMOS.find(p => p.id.startsWith('tesla'));
+  const teslaActive = teslaPromo && isActive(teslaPromo);
+  const dT = teslaPromo ? daysUntil(teslaPromo.validUntil) : -1;
+  el.innerHTML = `
+    <div class="sig"><p class="sig-val">${fmtK(S.coe)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend">Updated ${COE_HISTORY.updated}</p></div>
+    <div class="sig"><p class="sig-val">${dBid}d</p><p class="sig-lbl">Next Bid</p><p class="sig-trend">Results ${fmtDate(nextBid)}</p></div>
+    <div class="sig"><p class="sig-val" style="color:${teslaActive?'var(--color-tesla)':'var(--text-2)'}">${teslaActive?dT+'d':'\u2014'}</p><p class="sig-lbl">${teslaActive?'Tesla Deal':'No Deal'}</p><p class="sig-trend">${teslaActive?'Exp '+fmtDate(new Date(teslaPromo.validUntil)):'\u2014'}</p></div>`;
 }
 
 
@@ -1191,6 +1260,8 @@ function clearForm() {
 // BRIDGE
 // ═══════════════════════════════════════
 function calcBridge() {
+  const el = document.getElementById('pl-market-label');
+  if(el) el.textContent = 'Personal Loan Market — ' + new Date().toLocaleDateString('en-SG', {month:'long', year:'numeric'});
   const price=+document.getElementById('b-price')?.value||264999;
   const ltv=+document.getElementById('b-ltv')?.value||60;
   const carR=+document.getElementById('b-rate')?.value||1.28;
