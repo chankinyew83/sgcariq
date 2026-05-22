@@ -488,41 +488,6 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-ghost" onclick="updateCOE()" style="align-self:flex-end">Save</button>
     </div>
     <p class="u-xs u-muted mt-2" id="coe-updated">Last updated: 6 May 2026 · Latest: $126,236</p>
-
-    <!-- LTA key setup -->
-    <div class="mt-3 pt-3 gap-line">
-      <button class="expand-btn u-xs" onclick="toggleExpand('coe-setup',this)">Setup for full automation (LTA API key + Netlify Function)</button>
-      <div class="expandable" id="coe-setup">
-        <div class="kt mt-2">
-          <p class="kt-label">Option A — LTA DataMall key (works in Claude, may be blocked on Netlify)</p>
-          <ul class="kt-list">
-            <li>Go to <strong>datamall.lta.gov.sg</strong> → Request for API Access → free, instant approval</li>
-            <li>Copy your AccountKey and paste into the <code>LTA_KEY</code> variable at the top of the HTML file</li>
-            <li>Auto-fetch will then pull live COE data directly</li>
-          </ul>
-        </div>
-        <div class="kt mt-2">
-          <p class="kt-label">Option B — Netlify Function (fully automated on Netlify, recommended)</p>
-          <ul class="kt-list">
-            <li>Create file <code>netlify/functions/coe.js</code> in your Netlify project with the code below</li>
-            <li>Add <code>LTA_ACCOUNT_KEY=your_key</code> in Netlify → Site Settings → Environment Variables</li>
-            <li>Set <code>NETLIFY_FN = '/.netlify/functions/coe'</code> in the HTML — no key exposed in browser</li>
-          </ul>
-          <pre style="background:var(--s3);padding:var(--sp-3);border-radius:var(--r-sm);font-size:10px;color:var(--text-2);overflow-x:auto;margin-top:var(--sp-2);font-family:var(--font-mono);line-height:1.6">// netlify/functions/coe.js
-const fetch = require('node-fetch');
-exports.handler = async () => {
-  const r = await fetch('https://datamall2.mytransport.sg/ltaodataservice/COEResult', {
-    headers: { AccountKey: process.env.LTA_ACCOUNT_KEY }
-  });
-  return {
-    statusCode: 200,
-    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-    body: JSON.stringify(await r.json())
-  };
-};</pre>
-        </div>
-      </div>
-    </div>
   </div>
     <p class="card-label">COE — Cat B Trend</p>
     <div class="chart-box"><canvas id="coe-chart"></canvas></div>
