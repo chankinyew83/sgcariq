@@ -1,20 +1,38 @@
-// Netlify Function — fetches latest COE results from LTA DataMall
-// Runs on Netlify's servers, so no CORS issues
-// Your API key stays secret — never exposed in the browser
+// Netlify Function — fetches latest COE from LTA DataMall
+// Uses Node's built-in https module — no packages needed, works on all Node versions
 
-exports.handler = async () => {
-  try {
-    const response = await fetch(
-      'https://datamall2.mytransport.sg/ltaodataservice/COEResult',
-      { headers: { AccountKey: process.env.LTA_ACCOUNT_KEY } }
-    );
-    const data = await response.json();
-    return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    };
-  } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+const https = require('https');
+
+exports.handler = (event, context, callback) => {
+  const key = process.env.LTA_ACCOUNT_KEY;
+
+  const respond = (data) => callback(null, {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json'
+    },
+    body: typeof data === 'string' ? data : JSON.stringify(data)
+  });
+
+  if (!key) {
+    return respond({ _error: 'LTA_ACCOUNT_KEY not set in Netlify environment variables' });
   }
+
+  const req = https.request({
+    hostname: 'datamall2.mytransport.sg',
+    path: '/ltaodataservice/COEResult',
+    method: 'GET',
+    headers: {
+      'AccountKey': key,
+      'accept': 'application/json'
+    }
+  }, (res) => {
+    let raw = '';
+    res.on('data', chunk => raw += chunk);
+    res.on('end', () => respond(raw));
+  });
+
+  req.on('error', (e) => respond({ _error: e.message }));
+  req.end();
 };
