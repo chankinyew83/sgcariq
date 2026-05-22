@@ -1063,41 +1063,22 @@ function buildPromos() {
 // For full Netlify automation: deploy netlify/functions/coe.js (see RENDERS.intel)
 // ═══════════════════════════════════════
 const LTA_KEY     = '';   // Free key: datamall.lta.gov.sg → Request Access (5 min signup)
-const NETLIFY_FN  = '';   // Set to '/.netlify/functions/coe' after deploying the function
+const NETLIFY_FN  = '/.netlify/functions/coe'; // auto-fetch via Netlify proxy
 const DATAGOV_ID  = 'd_69b3380ad7e51aff3a7dcc84eba52b8a'; // COE dataset on data.gov.sg
 
 async function fetchLatestCOE() {
-  // Tier 1 — LTA DataMall direct (works in Claude, requires LTA_KEY)
-  if(LTA_KEY || NETLIFY_FN) {
-    const url = NETLIFY_FN || 'https://datamall2.mytransport.sg/ltaodataservice/COEResult';
-    const headers = NETLIFY_FN ? {} : { AccountKey: LTA_KEY, Accept: 'application/json' };
-    try {
-      const r = await fetch(url, { headers });
-      const d = await r.json();
-      const catB = (d.value||[]).find(x => x.vehicle_class === 'Category B');
-      if(catB) return { value:+catB.premium, label:`${catB.month} Bid ${catB.bidding_no}` };
-    } catch(e) { console.info('LTA direct blocked (CORS). Trying data.gov.sg…'); }
-  }
-
-  // Tier 2 — data.gov.sg (CORS-safe, no key, parses CSV for latest Cat B)
+  window._coeErr = null;
   try {
-    const poll = await fetch(
-      `https://api-production.data.gov.sg/v2/public/api/datasets/${DATAGOV_ID}/poll-download`,
-      { method:'GET' }
-    );
-    const { url } = await poll.json();
-    const csv  = await (await fetch(url)).text();
-    const rows = csv.split('\n').slice(1)
-      .map(r => r.split(','))
-      .filter(r => r[2]?.replace(/"/g,'').trim() === 'Category B' && r[5]?.trim());
-    const last = rows[rows.length - 1];
-    if(last) return {
-      value: parseInt(last[5].replace(/"/g,'')),
-      label: `${last[0].replace(/"/g,'').trim()} Bid ${last[1].replace(/"/g,'').trim()}`
-    };
-  } catch(e) { console.info('data.gov.sg fetch failed. Use manual entry.', e.message); }
-
-  return null; // triggers manual entry UI
+    const r = await fetch('/.netlify/functions/coe');
+    const d = await r.json();
+    if(d._error) { window._coeErr = d._error; return null; }
+    const catB = (d.value||[]).find(x => x.vehicle_class === 'Category B');
+    if(catB) return { value:+catB.premium, label:`${catB.month} Bid ${catB.bidding_no}` };
+    window._coeErr = 'No Cat B data in response';
+  } catch(e) {
+    window._coeErr = e.message;
+  }
+  return null;
 }
 
 async function autoFetchCOE() {
@@ -1107,9 +1088,10 @@ async function autoFetchCOE() {
   if(result) {
     document.getElementById('coe-new-val').value = result.value;
     document.getElementById('coe-new-lbl').value = result.label;
-    if(statusEl) { statusEl.textContent = `✓ Got $${result.value.toLocaleString()} (${result.label}) — tap Update & Save to confirm`; statusEl.className = 'u-xs u-success'; }
+    if(statusEl) { statusEl.textContent = `✓ Got ${fmt(result.value)} (${result.label}) — tap Save to confirm`; statusEl.className = 'u-xs u-success'; }
   } else {
-    if(statusEl) { statusEl.textContent = 'Auto-fetch unavailable — enter manually below, or add your LTA API key above.'; statusEl.className = 'u-xs u-warning'; }
+    const err = window._coeErr ? ` (${window._coeErr})` : '';
+    if(statusEl) { statusEl.textContent = `Could not fetch${err} — enter manually below`; statusEl.className = 'u-xs u-warning'; }
   }
 }
 
