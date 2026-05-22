@@ -1,4 +1,5 @@
 // Netlify Function — fetches latest Cat B COE from data.gov.sg
+// Dataset: COE Bidding Results / Prices (d_69b3380ad7e51aff3a7dcc84eba52b8a)
 
 const https = require('https');
 const DATASET_ID = 'd_69b3380ad7e51aff3a7dcc84eba52b8a';
@@ -40,25 +41,19 @@ exports.handler = async () => {
 
   try {
     const apiPath = `/v1/public/api/datasets/${DATASET_ID}`;
-
-    // Step 1: Initiate download
     await request('POST', `${apiPath}/initiate-download`, JSON.stringify({ exportType: 'csv' }));
-
-    // Step 2: Poll for URL
     const pollRaw = await request('GET', `${apiPath}/poll-download`);
     const poll = JSON.parse(pollRaw);
     const downloadUrl = poll?.data?.url || poll?.url;
     if (!downloadUrl) throw new Error(`No download URL. Poll: ${pollRaw.substring(0, 300)}`);
 
-    // Step 3: Download CSV
     const csv = await fetchUrl(downloadUrl);
     const lines = csv.split('\n').filter(l => l.trim());
     if (lines.length < 2) throw new Error('CSV empty');
 
-    // Step 4: Parse headers
     const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
 
-    // Step 5: Find last Category B row
+    // Find last Category B row (most recent)
     let catB = null;
     for (let i = lines.length - 1; i >= 1; i--) {
       const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
@@ -68,27 +63,44 @@ exports.handler = async () => {
     }
     if (!catB) throw new Error(`No Cat B row. Headers: ${headers.join(', ')}`);
 
-    // Step 6: Find the premium — it's the field with value > $50,000
-    // (quota and bids are always in the hundreds; premium is always >$50k for Cat B)
-    const EXCLUDE = ['bidding_no', 'bid_no'];
-    const premiumKey = Object.keys(catB).find(k => {
-      if (EXCLUDE.includes(k)) return false;
-      const v = parseInt(catB[k]);
-      return !isNaN(v) && v > 15000;
-    });
+    // The COE quota premium — column may be named differently across dataset versions
+    // Try known column names in priority order, then fall back to largest numeric value
+    const PREMIUM_KEYS = ['quota_premium', 'quotapremium', 'coe_premium', 'coepremium', 'quota premium', 'premium_price'];
+    let premium = 0;
+    let premiumKey = '';
 
-    if (!premiumKey) throw new Error(
-      `No premium found (>$50k) in row: ${JSON.stringify(catB)}`
+    for (const k of PREMIUM_KEYS) {
+      const v = parseInt((catB[k] || '').replace(/[^0-9]/g, ''));
+      if (v > 15000) { premium = v; premiumKey = k; break; }
+    }
+
+    // Fallback: find any field with value > $15,000 (COE price always above this)
+    if (!premium) {
+      const EXCLUDE = ['bidding_no', 'bid_no', 'month', 'vehicle_class'];
+      for (const [k, v] of Object.entries(catB)) {
+        if (EXCLUDE.includes(k)) continue;
+        const n = parseInt((v || '').replace(/[^0-9]/g, ''));
+        if (n > 15000) { premium = n; premiumKey = k; break; }
+      }
+    }
+
+    // Still not found — return the full row as debug so we can see all columns
+    if (!premium) throw new Error(
+      `No COE premium found. Full Cat B row: ${JSON.stringify(catB)} | Headers: ${headers.join(', ')}`
     );
 
-    const premium = parseInt(catB[premiumKey]);
-    const month   = catB.month || catB.bidding_month || '';
-    const bidNo   = catB.bidding_no || catB.bid_no || '';
+    const month  = catB.month || catB.bidding_month || '';
+    const bidNo  = catB.bidding_no || catB.bid_no || '';
 
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ value: premium, label: `${month} Bid ${bidNo}`.trim(), _source: 'data.gov.sg' })
+      body: JSON.stringify({
+        value: premium,
+        label: `${month} Bid ${bidNo}`.trim(),
+        _col: premiumKey,
+        _source: 'data.gov.sg'
+      })
     };
 
   } catch (e) {
