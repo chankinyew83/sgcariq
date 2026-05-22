@@ -1,5 +1,5 @@
-// Netlify Function — fetches latest Cat B COE from data.gov.sg
-// Dataset: COE Bidding Results / Prices (d_69b3380ad7e51aff3a7dcc84eba52b8a)
+// Vercel API Route — fetches latest Cat B COE from data.gov.sg
+// File location in repo: /api/coe.js
 
 const https = require('https');
 const DATASET_ID = 'd_69b3380ad7e51aff3a7dcc84eba52b8a';
@@ -36,8 +36,9 @@ function fetchUrl(url) {
   });
 }
 
-exports.handler = async () => {
-  const CORS = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
 
   try {
     const apiPath = `/v1/public/api/datasets/${DATASET_ID}`;
@@ -53,7 +54,6 @@ exports.handler = async () => {
 
     const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
 
-    // Find last Category B row (most recent)
     let catB = null;
     for (let i = lines.length - 1; i >= 1; i--) {
       const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
@@ -63,18 +63,12 @@ exports.handler = async () => {
     }
     if (!catB) throw new Error(`No Cat B row. Headers: ${headers.join(', ')}`);
 
-    // The COE quota premium — column may be named differently across dataset versions
-    // Try known column names in priority order, then fall back to largest numeric value
-    const PREMIUM_KEYS = ['quota_premium', 'quotapremium', 'coe_premium', 'coepremium', 'quota premium', 'premium_price'];
-    let premium = 0;
-    let premiumKey = '';
-
+    const PREMIUM_KEYS = ['quota_premium', 'quotapremium', 'coe_premium', 'coepremium', 'premium_price'];
+    let premium = 0, premiumKey = '';
     for (const k of PREMIUM_KEYS) {
       const v = parseInt((catB[k] || '').replace(/[^0-9]/g, ''));
       if (v > 15000) { premium = v; premiumKey = k; break; }
     }
-
-    // Fallback: find any field with value > $15,000 (COE price always above this)
     if (!premium) {
       const EXCLUDE = ['bidding_no', 'bid_no', 'month', 'vehicle_class'];
       for (const [k, v] of Object.entries(catB)) {
@@ -83,27 +77,13 @@ exports.handler = async () => {
         if (n > 15000) { premium = n; premiumKey = k; break; }
       }
     }
+    if (!premium) throw new Error(`No COE premium found. Row: ${JSON.stringify(catB)}`);
 
-    // Still not found — return the full row as debug so we can see all columns
-    if (!premium) throw new Error(
-      `No COE premium found. Full Cat B row: ${JSON.stringify(catB)} | Headers: ${headers.join(', ')}`
-    );
-
-    const month  = catB.month || catB.bidding_month || '';
-    const bidNo  = catB.bidding_no || catB.bid_no || '';
-
-    return {
-      statusCode: 200,
-      headers: CORS,
-      body: JSON.stringify({
-        value: premium,
-        label: `${month} Bid ${bidNo}`.trim(),
-        _col: premiumKey,
-        _source: 'data.gov.sg'
-      })
-    };
+    const month = catB.month || '';
+    const bidNo = catB.bidding_no || catB.bid_no || '';
+    res.json({ value: premium, label: `${month} Bid ${bidNo}`.trim(), _col: premiumKey });
 
   } catch (e) {
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ _error: e.message }) };
+    res.json({ _error: e.message });
   }
 };
