@@ -1,14 +1,14 @@
-// Vercel API Route — fetches latest Cat B COE from data.gov.sg
-// File location in repo: /api/coe.js
+// Vercel API Route — /api/coe.js
+// Fetches latest Cat B COE premium from data.gov.sg
+// KEY FIX: proper CSV parser handles "126,236" (comma inside quoted number)
 
 const https = require('https');
 const DATASET_ID = 'd_69b3380ad7e51aff3a7dcc84eba52b8a';
-const BASE = 'api-open.data.gov.sg';
 
-function request(method, path, body) {
+function httpsRequest(method, hostname, path, body) {
   return new Promise((resolve, reject) => {
     const opts = {
-      hostname: BASE, path, method,
+      hostname, path, method,
       headers: { 'Content-Type': 'application/json', 'User-Agent': 'SGCarIQ/1.0' }
     };
     if (body) opts.headers['Content-Length'] = Buffer.byteLength(body);
@@ -25,15 +25,35 @@ function request(method, path, body) {
 
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'SGCarIQ/1.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return fetchUrl(res.headers.location).then(resolve).catch(reject);
-      }
+    const u = new URL(url);
+    https.get({ hostname: u.hostname, path: u.pathname + u.search, headers: { 'User-Agent': 'SGCarIQ/1.0' } }, (res) => {
+      if ([301, 302, 303].includes(res.statusCode)) return fetchUrl(res.headers.location).then(resolve).catch(reject);
       let raw = '';
       res.on('data', c => raw += c);
       res.on('end', () => resolve(raw));
     }).on('error', reject);
   });
+}
+
+// Proper CSV parser — handles quoted fields containing commas (e.g. "126,236")
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  function parseLine(line) {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    fields.push(cur.trim());
+    return fields;
+  }
+  const headers = parseLine(lines[0]).map(h => h.toLowerCase());
+  return { headers, rows: lines.slice(1).map(l => {
+    const cols = parseLine(l);
+    return Object.fromEntries(headers.map((h, i) => [h, cols[i] || '']));
+  })};
 }
 
 module.exports = async (req, res) => {
@@ -42,46 +62,48 @@ module.exports = async (req, res) => {
 
   try {
     const apiPath = `/v1/public/api/datasets/${DATASET_ID}`;
-    await request('POST', `${apiPath}/initiate-download`, JSON.stringify({ exportType: 'csv' }));
-    const pollRaw = await request('GET', `${apiPath}/poll-download`);
+    await httpsRequest('POST', 'api-open.data.gov.sg', `${apiPath}/initiate-download`,
+      JSON.stringify({ exportType: 'csv' }));
+
+    const pollRaw = await httpsRequest('GET', 'api-open.data.gov.sg', `${apiPath}/poll-download`);
     const poll = JSON.parse(pollRaw);
     const downloadUrl = poll?.data?.url || poll?.url;
-    if (!downloadUrl) throw new Error(`No download URL. Poll: ${pollRaw.substring(0, 300)}`);
+    if (!downloadUrl) throw new Error(`No URL. Poll: ${pollRaw.substring(0, 200)}`);
 
     const csv = await fetchUrl(downloadUrl);
-    const lines = csv.split('\n').filter(l => l.trim());
-    if (lines.length < 2) throw new Error('CSV empty');
+    const { headers, rows } = parseCSV(csv);
 
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    // Find all Category B rows, most recent last
+    const catBRows = rows.filter(r => {
+      const vc = (r.vehicle_class || r.vehicleclass || '').toLowerCase();
+      return vc.includes('category b') || vc === 'b';
+    });
+    if (!catBRows.length) throw new Error(`No Cat B rows. Headers: ${headers.join(', ')}`);
 
-    let catB = null;
-    for (let i = lines.length - 1; i >= 1; i--) {
-      const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
-      const row = Object.fromEntries(headers.map((h, j) => [h, cols[j] || '']));
-      const vc = (row.vehicle_class || row.vehicleclass || '').toLowerCase();
-      if (vc.includes('category b') || vc === 'b') { catB = row; break; }
-    }
-    if (!catB) throw new Error(`No Cat B row. Headers: ${headers.join(', ')}`);
+    // Find most recent row that has a valid COE premium (>$15,000)
+    const EXCLUDE = new Set(['bidding_no', 'bid_no', 'month', 'vehicle_class', 'vehicleclass']);
+    let premium = 0, premiumKey = '', bestRow = null;
 
-    const PREMIUM_KEYS = ['quota_premium', 'quotapremium', 'coe_premium', 'coepremium', 'premium_price'];
-    let premium = 0, premiumKey = '';
-    for (const k of PREMIUM_KEYS) {
-      const v = parseInt((catB[k] || '').replace(/[^0-9]/g, ''));
-      if (v > 15000) { premium = v; premiumKey = k; break; }
-    }
-    if (!premium) {
-      const EXCLUDE = ['bidding_no', 'bid_no', 'month', 'vehicle_class'];
-      for (const [k, v] of Object.entries(catB)) {
-        if (EXCLUDE.includes(k)) continue;
+    // Scan from most recent backwards
+    for (let i = catBRows.length - 1; i >= 0; i--) {
+      const row = catBRows[i];
+      for (const [k, v] of Object.entries(row)) {
+        if (EXCLUDE.has(k)) continue;
+        // Strip all non-numeric chars (handles "126,236" → 126236)
         const n = parseInt((v || '').replace(/[^0-9]/g, ''));
-        if (n > 15000) { premium = n; premiumKey = k; break; }
+        if (n > 15000) { premium = n; premiumKey = k; bestRow = row; break; }
       }
+      if (premium) break;
     }
-    if (!premium) throw new Error(`No COE premium found. Row: ${JSON.stringify(catB)}`);
 
-    const month = catB.month || '';
-    const bidNo = catB.bidding_no || catB.bid_no || '';
-    res.json({ value: premium, label: `${month} Bid ${bidNo}`.trim(), _col: premiumKey });
+    if (!premium) throw new Error(
+      `No premium > $15k found. Headers: ${headers.join(', ')} | Last Cat B: ${JSON.stringify(catBRows[catBRows.length-1])}`
+    );
+
+    const month  = bestRow.month || bestRow.bidding_month || '';
+    const bidNo  = bestRow.bidding_no || bestRow.bid_no || '';
+
+    res.json({ value: premium, label: `${month} Bid ${bidNo}`.trim(), _col: premiumKey, _source: 'data.gov.sg' });
 
   } catch (e) {
     res.json({ _error: e.message });
