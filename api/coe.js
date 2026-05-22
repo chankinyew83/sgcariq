@@ -112,6 +112,7 @@ module.exports = async (req, res) => {
   if (key) {
     try {
       const result = await fromLTA(key);
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
       return res.json({ ...result, _source: 'LTA DataMall' });
     } catch (e) {
       errors.push('LTA: ' + e.message);
@@ -120,6 +121,7 @@ module.exports = async (req, res) => {
 
   try {
     const result = await fromGovSG();
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
     return res.json({ ...result, _source: 'data.gov.sg' });
   } catch (e) {
     errors.push('GovSG: ' + e.message);
