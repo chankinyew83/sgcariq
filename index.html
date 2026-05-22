@@ -1093,7 +1093,7 @@ function buildPromos() {
 // For full Netlify automation: deploy netlify/functions/coe.js (see RENDERS.intel)
 // ═══════════════════════════════════════
 const LTA_KEY     = '';   // Free key: datamall.lta.gov.sg → Request Access (5 min signup)
-const NETLIFY_FN  = '/.netlify/functions/coe'; // auto-fetch via Netlify proxy
+const NETLIFY_FN  = '/api/coe'; // Vercel API route
 const DATAGOV_ID  = 'd_69b3380ad7e51aff3a7dcc84eba52b8a'; // COE dataset on data.gov.sg
 
 async function fetchLatestCOE() {
@@ -1258,8 +1258,8 @@ function clearForm() {
 // BRIDGE
 // ═══════════════════════════════════════
 function calcBridge() {
-  const el = document.getElementById('pl-market-label');
-  if(el) el.textContent = 'Personal Loan Market — ' + new Date().toLocaleDateString('en-SG', {month:'long', year:'numeric'});
+  const lbl = document.getElementById('pl-market-label');
+  if(lbl) lbl.textContent = 'Personal Loan Market — ' + new Date().toLocaleDateString('en-SG', {month:'long', year:'numeric'});
   const price=+document.getElementById('b-price')?.value||264999;
   const ltv=+document.getElementById('b-ltv')?.value||60;
   const carR=+document.getElementById('b-rate')?.value||1.28;
