@@ -1,59 +1,60 @@
-// Vercel API Route — /api/coe.js
-// Fetches latest Cat B COE premium from data.gov.sg
-// KEY FIX: proper CSV parser handles "126,236" (comma inside quoted number)
-
+// Vercel Serverless Function — /api/coe.js
 const https = require('https');
-const DATASET_ID = 'd_69b3380ad7e51aff3a7dcc84eba52b8a';
+const { URL } = require('url'); // explicit import for compatibility
 
-function httpsRequest(method, hostname, path, body) {
+const DATASET_ID = 'd_69b3380ad7e51aff3a7dcc84eba52b8a';
+const API_HOST = 'api-open.data.gov.sg';
+
+function post(path, body) {
+  const data = JSON.stringify(body);
   return new Promise((resolve, reject) => {
-    const opts = {
-      hostname, path, method,
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'SGCarIQ/1.0' }
-    };
-    if (body) opts.headers['Content-Length'] = Buffer.byteLength(body);
-    const req = https.request(opts, (res) => {
-      let raw = '';
-      res.on('data', c => raw += c);
-      res.on('end', () => resolve(raw));
-    });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
+    const req = https.request(
+      { hostname: API_HOST, path, method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }},
+      (res) => { let r = ''; res.on('data', c => r += c); res.on('end', () => resolve(r)); }
+    );
+    req.on('error', reject); req.write(data); req.end();
   });
 }
 
-function fetchUrl(url) {
+function get(path) {
   return new Promise((resolve, reject) => {
-    const u = new URL(url);
-    https.get({ hostname: u.hostname, path: u.pathname + u.search, headers: { 'User-Agent': 'SGCarIQ/1.0' } }, (res) => {
-      if ([301, 302, 303].includes(res.statusCode)) return fetchUrl(res.headers.location).then(resolve).catch(reject);
-      let raw = '';
-      res.on('data', c => raw += c);
-      res.on('end', () => resolve(raw));
+    https.get({ hostname: API_HOST, path }, (res) => {
+      let r = ''; res.on('data', c => r += c); res.on('end', () => resolve(r));
     }).on('error', reject);
   });
 }
 
-// Proper CSV parser — handles quoted fields containing commas (e.g. "126,236")
+function download(urlStr) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    const mod = u.protocol === 'https:' ? https : require('http');
+    mod.get({ hostname: u.hostname, path: u.pathname + u.search }, (res) => {
+      if ([301,302,303].includes(res.statusCode)) return download(res.headers.location).then(resolve).catch(reject);
+      let r = ''; res.on('data', c => r += c); res.on('end', () => resolve(r));
+    }).on('error', reject);
+  });
+}
+
+// CSV parser that handles quoted fields with commas inside (e.g. "126,236")
 function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim());
-  function parseLine(line) {
-    const fields = [];
-    let cur = '', inQ = false;
-    for (const ch of line) {
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
-      else { cur += ch; }
+  const parse = (line) => {
+    const out = []; let cur = '', q = false;
+    for (const c of line) {
+      if (c === '"') { q = !q; }
+      else if (c === ',' && !q) { out.push(cur.trim()); cur = ''; }
+      else { cur += c; }
     }
-    fields.push(cur.trim());
-    return fields;
-  }
-  const headers = parseLine(lines[0]).map(h => h.toLowerCase());
-  return { headers, rows: lines.slice(1).map(l => {
-    const cols = parseLine(l);
-    return Object.fromEntries(headers.map((h, i) => [h, cols[i] || '']));
-  })};
+    out.push(cur.trim());
+    return out;
+  };
+  const headers = parse(lines[0]).map(h => h.toLowerCase());
+  const rows = lines.slice(1).map(l => {
+    const vals = parse(l);
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
+  });
+  return { headers, rows };
 }
 
 module.exports = async (req, res) => {
@@ -61,51 +62,50 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    const apiPath = `/v1/public/api/datasets/${DATASET_ID}`;
-    await httpsRequest('POST', 'api-open.data.gov.sg', `${apiPath}/initiate-download`,
-      JSON.stringify({ exportType: 'csv' }));
+    const base = `/v1/public/api/datasets/${DATASET_ID}`;
 
-    const pollRaw = await httpsRequest('GET', 'api-open.data.gov.sg', `${apiPath}/poll-download`);
+    // Step 1: initiate download
+    await post(`${base}/initiate-download`, { exportType: 'csv' });
+
+    // Step 2: poll for URL
+    const pollRaw = await get(`${base}/poll-download`);
     const poll = JSON.parse(pollRaw);
-    const downloadUrl = poll?.data?.url || poll?.url;
-    if (!downloadUrl) throw new Error(`No URL. Poll: ${pollRaw.substring(0, 200)}`);
+    const csvUrl = poll?.data?.url || poll?.url;
+    if (!csvUrl) throw new Error('No CSV URL in poll response: ' + pollRaw.slice(0, 200));
 
-    const csv = await fetchUrl(downloadUrl);
+    // Step 3: download and parse CSV
+    const csv = await download(csvUrl);
     const { headers, rows } = parseCSV(csv);
 
-    // Find all Category B rows, most recent last
-    const catBRows = rows.filter(r => {
-      const vc = (r.vehicle_class || r.vehicleclass || '').toLowerCase();
-      return vc.includes('category b') || vc === 'b';
-    });
-    if (!catBRows.length) throw new Error(`No Cat B rows. Headers: ${headers.join(', ')}`);
+    // Step 4: find latest Category B row with a valid premium (>$15k)
+    const SKIP = new Set(['bidding_no','bid_no','month','vehicle_class','vehicleclass']);
+    let premium = 0, col = '', row = null;
 
-    // Find most recent row that has a valid COE premium (>$15,000)
-    const EXCLUDE = new Set(['bidding_no', 'bid_no', 'month', 'vehicle_class', 'vehicleclass']);
-    let premium = 0, premiumKey = '', bestRow = null;
+    const catB = rows.filter(r =>
+      (r.vehicle_class || r.vehicleclass || '').toLowerCase().includes('category b')
+    );
+    if (!catB.length) throw new Error('No Cat B rows. Headers: ' + headers.join(', '));
 
-    // Scan from most recent backwards
-    for (let i = catBRows.length - 1; i >= 0; i--) {
-      const row = catBRows[i];
-      for (const [k, v] of Object.entries(row)) {
-        if (EXCLUDE.has(k)) continue;
-        // Strip all non-numeric chars (handles "126,236" → 126236)
-        const n = parseInt((v || '').replace(/[^0-9]/g, ''));
-        if (n > 15000) { premium = n; premiumKey = k; bestRow = row; break; }
+    for (let i = catB.length - 1; i >= 0; i--) {
+      for (const [k, v] of Object.entries(catB[i])) {
+        if (SKIP.has(k)) continue;
+        const n = parseInt(v.replace(/[^0-9]/g, ''));
+        if (n > 15000) { premium = n; col = k; row = catB[i]; break; }
       }
       if (premium) break;
     }
 
     if (!premium) throw new Error(
-      `No premium > $15k found. Headers: ${headers.join(', ')} | Last Cat B: ${JSON.stringify(catBRows[catBRows.length-1])}`
+      'No premium >$15k. Last Cat B row: ' + JSON.stringify(catB[catB.length - 1])
     );
 
-    const month  = bestRow.month || bestRow.bidding_month || '';
-    const bidNo  = bestRow.bidding_no || bestRow.bid_no || '';
+    res.json({
+      value: premium,
+      label: ((row.month || '') + ' Bid ' + (row.bidding_no || row.bid_no || '')).trim(),
+      _col: col
+    });
 
-    res.json({ value: premium, label: `${month} Bid ${bidNo}`.trim(), _col: premiumKey, _source: 'data.gov.sg' });
-
-  } catch (e) {
-    res.json({ _error: e.message });
+  } catch (err) {
+    res.json({ _error: err.message });
   }
 };
