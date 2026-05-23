@@ -663,7 +663,8 @@ let COE_HISTORY = {
 const S = { coe:126236, hold:7, km:15000, elec:.327, petrol:2.50, insEv:2200, insHyb:2000, svcEv:800, svcHyb:1800, park:2400 };
 
 const CARS = [
-  { id:'tesla-yl', name:'Tesla YL AWD ★',  short:'Tesla YL',    seats:7, type:'BEV SUV',  kw:340, consumption:14.7, list:264999, b6:264999, expo:264999, roadTax:5400, fuel:'ev', arf:50000, loanRate:1.28, loanTenure:7, notes:'Preferred. Road tax $5,400/yr blocks ranking until ≤230kW variant available. Deal ACTIVE 2 days.' },
+  { id:'tesla-yl', name:'Tesla YL AWD ★',  short:'Tesla YL',    seats:7, type:'BEV SUV',  kw:340, consumption:14.6, list:267999, b6:267999, expo:267999, roadTax:5400, fuel:'ev', arf:50000, loanRate:1.28, loanTenure:7, notes:'Preferred. Road tax $5,400/yr (340kW). Saver only — no Guaranteed Package. 1.28% financing expires 31 May.' },
+  { id:'tesla-ylr', name:'Tesla Y LR RWD', short:'Tesla Y LR',  seats:5, type:'BEV SUV',  kw:220, consumption:14.2, list:239999, b6:239999, expo:239999, roadTax:2206, fuel:'ev', arf:45000, loanRate:1.28, loanTenure:7, notes:'Lower road tax $2,206/yr vs YL $5,400. Guaranteed Package at $242,999. 5-seater — does not meet 6-seat requirement. Watch for 7-seat option.' },
   { id:'i9-std',   name:'IONIQ 9 2WD',     short:'IONIQ 9 2WD', seats:7, type:'BEV SUV',  kw:160, consumption:20.6, list:394499, b3:311999, b6:305999, expo:294999, roadTax:742, fuel:'ev', arf:50000, loanRate:1.98, loanTenure:5, notes:'Best value entry. Confirm 6-BIDS batch availability.' },
   { id:'i9-demo',  name:'IONIQ 9 Demo 6s', short:'IONIQ 9 Demo', seats:6, type:'BEV SUV',  kw:160, consumption:20.6, list:394499, b6:305999, expo:299999, roadTax:742, fuel:'ev', arf:50000, loanRate:1.98, loanTenure:5, notes:'6-seat config. Confirm availability and mileage: Ranee +65 9850 5206.' },
   { id:'i9-cal',   name:'IONIQ 9 Cal 6s',  short:'IONIQ 9 Cal', seats:6, type:'BEV SUV',  kw:213, consumption:20.6, list:429499, b3:346999, b6:340999, roadTax:742, fuel:'ev', arf:55000, loanRate:1.98, loanTenure:5, notes:'Captain chairs AWD. +$41k premium over Demo.' },
@@ -673,10 +674,10 @@ const CARS = [
 
 let PROMOS = [
   {
-    id:'tesla-sms-may26', source:'Tesla Singapore — SMS Promo', date:'17 May 2026', validUntil:'2026-05-19',
-    interest:1.28, prices:{'tesla-yl':264999},
-    perks:[{l:'1yr road tax (incl.)',v:5400},{l:'Guaranteed COE option',v:3000}],
-    notes:'EXTENDED to 19 May. Guaranteed COE back. 1.28% lowest ever rate. $30k VES rebate already reflected in $264,999 price — not an additional saving. Risk: VES bands may change in 2026 Budget, potentially reducing rebate for 2027 purchases. Limited units. Call: +65 9184 1638.',
+    id:'tesla-sms-may26', source:'Tesla Singapore — Pricelist May 2026', date:'22 May 2026', validUntil:'2026-06-04',
+    interest:1.28, prices:{'tesla-yl':267999},
+    perks:[{l:'1yr road tax (incl.)',v:5400}],
+    notes:'Price valid till 4 Jun 2026. 1.28% financing (DBS/OCBC) expires 31 May — 9 days. Guaranteed Package NOT available for YL AWD (saver only, 8 bids). Guaranteed Package available for Model Y LR RWD at $242,999 (road tax $2,206/yr). No penalty for full cash payment. $10k deposit refundable.',
     active:true
   },
   {
@@ -1213,9 +1214,14 @@ async function handleCmdScan(file) {
 
 async function extractPromo(file) {
   const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-  const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'Extract Singapore car dealer promotion. Return ONLY valid JSON, no markdown: {"source":"","date":"","validUntil":"","interest":null,"prices":{"Car Model":price},"perks":[{"l":"label","v":value}],"notes":""}'}]}]})});
-  const d = await resp.json();
-  return JSON.parse((d.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'Extract Singapore car dealer promotion. Return ONLY valid JSON, no markdown: {"source":"","date":"","validUntil":"","interest":null,"prices":{"Car Model":price},"perks":[{"l":"label","v":value}],"notes":""}'}]}]})});
+    if(!resp.ok) throw new Error('API unavailable');
+    const d = await resp.json();
+    return JSON.parse((d.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
+  } catch(e) {
+    throw new Error('Scan only works in Claude.ai — enter manually below');
+  }
 }
 
 function prefillForm(p) {
