@@ -365,10 +365,8 @@ tr:last-child td{border-bottom:none}
   <div class="card">
     <p class="card-label">Priority Actions</p>
     <div id="actions" class="u-stack-2"></div>
-    <div class="gap-line mt-3 pt-3 u-row u-wrap" style="gap:var(--sp-3)">
-      <button class="btn btn-ghost u-sm" id="cmd-scan-btn" onclick="document.getElementById('cmd-scan-file').click()">📷 Scan Dealer Flyer</button>
-      <span id="cmd-scan-status" class="u-sm u-dim">Snap any promo → auto-extracts to Market</span>
-      <input type="file" id="cmd-scan-file" accept="image/*" style="display:none" onchange="handleCmdScan(this.files[0])">
+    <div class="gap-line mt-3 pt-3">
+      <p class="u-xs u-dim">To log a new promo — share the flyer image in the Claude chat and ask to extract it, then paste the update here.</p>
     </div>
   </div>
   <div class="card">
@@ -450,10 +448,10 @@ tr:last-child td{border-bottom:none}
     <p class="card-label">COE Live Data</p>
     <p class="u-xs u-dim mb-3">LTA publishes COE results after every bid (every 2 weeks). The app can fetch automatically — or you can enter manually as a fallback.</p>
 
-    <!-- Auto-fetch row -->
-    <div class="u-row u-wrap mb-3" style="gap:var(--sp-2)">
-      <button class="btn btn-primary" onclick="autoFetchCOE()">⬇ Fetch Latest from LTA</button>
-      <span id="coe-fetch-status" class="u-xs u-dim" style="align-self:center">Tries LTA DataMall → data.gov.sg automatically</span>
+    <!-- OneMotoring link -->
+    <div class="mb-3">
+      <a class="btn btn-primary" href="https://www.onemotoring.lta.gov.sg/content/onemotoring/home/buying/coe-open-bidding/results.html" target="_blank" rel="noopener">🔗 Check latest result on OneMotoring ↗</a>
+      <p class="u-xs u-dim mt-2">Opens LTA's official results page. Note the Cat B premium, enter below, tap Save.</p>
     </div>
 
     <!-- Manual override -->
@@ -481,11 +479,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="card">
     <p class="card-label">Log Promotion</p>
-    <div class="u-row u-wrap mb-3" style="gap:var(--sp-2)">
-      <button class="btn btn-primary" id="mkt-scan-btn" onclick="document.getElementById('mkt-scan-file').click()">📷 Scan Flyer</button>
-      <span id="scan-status" class="u-sm u-dim">Upload a dealer flyer to auto-extract</span>
-      <input type="file" id="mkt-scan-file" accept="image/*" style="display:none" onchange="doScan(this.files[0])">
-    </div>
+
     <div class="form-grid">
       <div><label class="f-label">Source</label><input id="p-source" placeholder="e.g. Tesla Singapore"></div>
       <div><label class="f-label">Valid Until</label><input id="p-valid" placeholder="e.g. 19 May 2026"></div>
@@ -607,7 +601,7 @@ tr:last-child td{border-bottom:none}
 // Falls back to localStorage (Netlify, same-device)
 // Swap API_BASE_URL for your own REST endpoint when ready
 // ═══════════════════════════════════════
-const API_BASE_URL = ''; // e.g. 'https://your-api.com/sgcariq' — leave empty to use localStorage
+const API_BASE_URL = ''; // reserved for future use
 
 const Store = {
   async get(key) {
@@ -754,7 +748,7 @@ const fmtK = v => '$'+(v/1000).toFixed(1)+'k';
 const TABS = ['command','compare','own','market','deal','intel'];
 const RENDERS = {
   command: renderCommand, compare: renderCompare,
-  own: renderOwn, market: () => { renderMarket(); autoFetchCOE(); },
+  own: renderOwn, market: renderMarket,
   deal: calcBridge, intel: ()=>{},
 };
 
@@ -1087,47 +1081,6 @@ function buildPromos() {
 }
 
 // ═══════════════════════════════════════
-// COE AUTO-FETCH — three-tier fallback
-// Tier 1: LTA DataMall direct (works in Claude artifact, blocked by CORS on Netlify)
-// Tier 2: data.gov.sg CORS-safe API (no key needed, works everywhere)
-// Tier 3: Manual entry (always works)
-// For full Netlify automation: deploy netlify/functions/coe.js (see RENDERS.intel)
-// ═══════════════════════════════════════
-const LTA_KEY     = '';   // Free key: datamall.lta.gov.sg → Request Access (5 min signup)
-const NETLIFY_FN  = '/api/coe'; // Vercel API route
-const DATAGOV_ID  = 'd_69b3380ad7e51aff3a7dcc84eba52b8a'; // COE dataset on data.gov.sg
-
-async function fetchLatestCOE() {
-  window._coeErr = null;
-  try {
-    const r = await fetch('/.netlify/functions/coe');
-    const d = await r.json();
-    if(d._error) { window._coeErr = d._error; return null; }
-    // New format from data.gov.sg function: { value: 126236, label: "2026-05 Bid 1" }
-    if(typeof d.value === 'number' && d.label) return { value: d.value, label: d.label };
-    // Legacy LTA format: { value: [{ vehicle_class, premium, month, bidding_no }] }
-    const catB = Array.isArray(d.value) && d.value.find(x => x.vehicle_class === 'Category B');
-    if(catB) return { value:+catB.premium, label:`${catB.month} Bid ${catB.bidding_no}` };
-    window._coeErr = 'Unexpected response format';
-  } catch(e) {
-    window._coeErr = e.message;
-  }
-  return null;
-}
-
-async function autoFetchCOE() {
-  const statusEl = document.getElementById('coe-fetch-status');
-  if(statusEl) { statusEl.textContent = 'Fetching…'; statusEl.className = 'u-xs u-primary'; }
-  const result = await fetchLatestCOE();
-  if(result) {
-    document.getElementById('coe-new-val').value = result.value;
-    document.getElementById('coe-new-lbl').value = result.label;
-    if(statusEl) { statusEl.textContent = `✓ Got ${fmt(result.value)} (${result.label}) — tap Save to confirm`; statusEl.className = 'u-xs u-success'; }
-  } else {
-    const err = window._coeErr ? ` (${window._coeErr})` : '';
-    if(statusEl) { statusEl.textContent = `Could not fetch${err} — enter manually below`; statusEl.className = 'u-xs u-warning'; }
-  }
-}
 
 async function updateCOE() {
   const val  = +document.getElementById('coe-new-val').value;
@@ -1178,51 +1131,6 @@ function renderSignals() {
     <div class="sig"><p class="sig-val" style="color:${teslaActive?'var(--color-tesla)':'var(--text-2)'}">${teslaActive?dT+'d':'\u2014'}</p><p class="sig-lbl">${teslaActive?'Tesla Deal':'No Deal'}</p><p class="sig-trend">${teslaActive?'Exp '+fmtDate(new Date(teslaPromo.validUntil)):'\u2014'}</p></div>`;
 }
 
-
-// ═══════════════════════════════════════
-async function doScan(file) {
-  if(!file) return;
-  const btn=document.getElementById('mkt-scan-btn'), st=document.getElementById('scan-status');
-  btn.textContent='⏳'; btn.disabled=true;
-  st.style.color='var(--color-primary-lt)'; st.textContent='Extracting…';
-  try {
-    const data = await extractPromo(file);
-    prefillForm(data);
-    st.style.color='var(--color-success)'; st.textContent='Extracted — review below';
-  } catch(e) {
-    st.style.color='var(--color-danger)'; st.textContent='Could not extract — fill in manually';
-  }
-  btn.textContent='📷 Scan Flyer'; btn.disabled=false;
-  document.getElementById('mkt-scan-file').value='';
-}
-
-async function handleCmdScan(file) {
-  if(!file) return;
-  const btn=document.getElementById('cmd-scan-btn'), st=document.getElementById('cmd-scan-status');
-  btn.textContent='⏳ Extracting…'; btn.disabled=true;
-  try {
-    const data = await extractPromo(file);
-    prefillForm(data);
-    st.style.color='var(--color-success)'; st.textContent='✓ Extracted — opening Market';
-    setTimeout(()=>nav('market'), 700);
-  } catch(e) {
-    st.style.color='var(--color-danger)'; st.textContent='Could not extract — fill in manually in Market';
-  }
-  btn.textContent='📷 Scan Dealer Flyer'; btn.disabled=false;
-  document.getElementById('cmd-scan-file').value='';
-}
-
-async function extractPromo(file) {
-  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'Extract Singapore car dealer promotion. Return ONLY valid JSON, no markdown: {"source":"","date":"","validUntil":"","interest":null,"prices":{"Car Model":price},"perks":[{"l":"label","v":value}],"notes":""}'}]}]})});
-    if(!resp.ok) throw new Error('API unavailable');
-    const d = await resp.json();
-    return JSON.parse((d.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
-  } catch(e) {
-    throw new Error('Scan only works in Claude.ai — enter manually below');
-  }
-}
 
 function prefillForm(p) {
   if(p.source) document.getElementById('p-source').value=p.source;
