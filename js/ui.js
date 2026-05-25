@@ -238,36 +238,47 @@ function renderDepTable() {
   const lbl   = document.getElementById('dep-table-label');
   if (lbl) lbl.textContent = `Depreciation — ${car?.name || 'Tesla YL'} ${fmt(price)}`;
 
-  // Scrap PARF: what the car gets at year 10 deregistration (5% of ARF, capped $30k)
-  const scrapParf = Math.min(arf * 0.05, 30000);
-
-  const pcts  = [, 0.30, 0.30, 0.30, 0.30, 0.30, 0.25, 0.20, 0.15, 0.10, 0.05];
-  const dtEl  = document.getElementById('dep-table');
+  const pcts = [, 0.30, 0.30, 0.30, 0.30, 0.30, 0.25, 0.20, 0.15, 0.10, 0.05];
+  const dtEl = document.getElementById('dep-table');
   if (!dtEl) return;
 
-  dtEl.innerHTML = [1,2,3,4,5,6,7,8,9,10].map((yr, i) => {
-    const p     = pcts[yr];
-    const parf  = Math.min(arf * p, 30000);
+  // Pre-compute residual for each year so we can calculate marginal (yr-on-yr) loss
+  const residuals = [price]; // residuals[0] = purchase price
+  for (let yr = 1; yr <= 10; yr++) {
+    const parf  = Math.min(arf * pcts[yr], 30000);
     const coeR  = yr < 10 ? ((10 - yr) / 10) * coe : 0;
     const mkt   = yr <= 7 ? 10000 : 5000;
-    const resid = parf + (yr < 10 ? coeR : 0) + (yr < 10 ? mkt : 0);
+    residuals[yr] = parf + (yr < 10 ? coeR : 0) + (yr < 10 ? mkt : 0);
+  }
 
-    // sgCarmart convention: (Market value − Scrap PARF) / Remaining COE years
-    // This is the annual dep a buyer would see when you list this car for sale.
-    const remaining = 10 - yr;
-    const dep = remaining > 0 ? (resid - scrapParf) / remaining : null;
+  dtEl.innerHTML = [1,2,3,4,5,6,7,8,9,10].map((yr, i) => {
+    const parf     = Math.min(arf * pcts[yr], 30000);
+    const resid    = residuals[yr];
+    const parfPrev = Math.min(arf * pcts[Math.max(yr-1,1)], 30000);
+    const parfDrop = yr > 1 && parf < parfPrev; // PARF cliff this year
 
-    const col = dep === null ? 'var(--text-3)'
-              : dep < 20000 ? 'var(--color-success)'
-              : dep < 28000 ? 'var(--color-warning)'
-              : 'var(--color-danger)';
+    // Marginal: value lost in THIS specific year
+    const marginal = residuals[yr-1] - resid;
+    // Average: total accumulated loss divided by years held
+    const avg      = (price - resid) / yr;
+
+    // Sweet-spot logic
+    const note = yr === 5 ? ' <span class="chip chip-success u-xs">MAX PARF</span>'
+               : yr === 7 ? ' <span class="chip chip-warning u-xs">SWEET SPOT</span>'
+               : '';
+
+    const mCol = marginal > 30000 ? 'var(--color-danger)'
+               : marginal > 15000 ? 'var(--color-warning)'
+               : 'var(--color-success)';
+    const aCol = avg < 35000 ? 'var(--color-success)'
+               : avg < 60000 ? 'var(--color-warning)'
+               : 'var(--color-danger)';
 
     return `<tr class="${yr === 7 ? 'tr-accent' : ''} ${i >= 4 ? 'tr-hide' : ''}">
-      <td data-label="Hold">${yr}yr${yr === 7 ? ' ⭐' : ''}</td>
-      <td class="right u-mono u-success" data-label="PARF">${fmt(parf)}<br><span class="u-xs u-muted">${(p * 100).toFixed(0)}%</span></td>
-      <td class="right u-mono" data-label="COE Val">${coeR > 0 ? fmt(coeR) : '—'}</td>
-      <td class="right u-mono u-bold" data-label="Residual">${fmt(resid)}</td>
-      <td class="right u-mono u-bold" data-label="Annual Dep" style="color:${col}">${dep !== null ? fmtK(dep) : '—'}</td>
+      <td data-label="Hold">${yr}yr${note}</td>
+      <td class="right u-mono u-success" data-label="PARF Rebate">${fmt(parf)}${parfDrop ? ' <span class="u-danger u-xs">↓</span>' : ''}</td>
+      <td class="right u-mono u-bold" data-label="This Year" style="color:${mCol}">${fmtK(marginal)}</td>
+      <td class="right u-mono u-bold" data-label="Avg/yr" style="color:${aCol}">${fmtK(avg)}</td>
     </tr>`;
   }).join('');
 }
