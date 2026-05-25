@@ -22,9 +22,10 @@ let COE_HISTORY = {
     { label: "Feb 2 '26", value: 112000 },
     { label: "Mar 1 '26", value: 114002 },
     { label: "Mar 2 '26", value: 115568 },
-    { label: "Apr 1 '26", value: 120001 },
+    { label: "Apr 1 '26", value: 121000 },
     { label: "Apr 2 '26", value: 121001 },
     { label: "May 1 '26", value: 126236 },
+    { label: "May 2 '26", value: 129501 },
   ],
   updated: '20 May 2026'
 };
