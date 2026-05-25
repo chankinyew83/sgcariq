@@ -10,9 +10,10 @@ function renderMarket() {
   const teslaActive = teslaPromo && isActive(teslaPromo);
   const dT         = teslaPromo ? daysUntil(teslaPromo.validUntil) : -1;
 
+  const actualCOE  = getActualCOE();
   const mktSig = document.getElementById('mkt-signals');
   if (mktSig) mktSig.innerHTML = `
-    <div class="sig"><p class="sig-val">${fmtK(S.coe)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend">Updated ${COE_HISTORY.updated}</p></div>
+    <div class="sig"><p class="sig-val">${fmtK(actualCOE)}</p><p class="sig-lbl">Cat B COE</p><p class="sig-trend">Updated ${COE_HISTORY.updated}</p></div>
     <div class="sig"><p class="sig-val">${dBid}d</p><p class="sig-lbl">Next Bid</p><p class="sig-trend">Results ${fmtDate(nextBid)}</p></div>
     <div class="sig"><p class="sig-val" style="color:${teslaActive ? 'var(--color-tesla)' : 'var(--text-2)'}">${teslaActive ? dT + 'd' : '—'}</p><p class="sig-lbl">${teslaActive ? 'Tesla Deal' : 'No Deal'}</p><p class="sig-trend">${teslaActive ? 'Exp ' + fmtDate(new Date(teslaPromo.validUntil)) : '—'}</p></div>`;
 
