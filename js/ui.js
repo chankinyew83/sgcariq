@@ -264,8 +264,7 @@ function renderDepTable() {
 
     return `<tr class="${yr === 7 ? 'tr-accent' : ''} ${i >= 4 ? 'tr-hide' : ''}">
       <td data-label="Hold">${yr}yr${yr === 7 ? ' ⭐' : ''}</td>
-      <td data-label="PARF %">${(p * 100).toFixed(0)}%</td>
-      <td class="right u-mono u-success" data-label="PARF">${fmt(parf)}</td>
+      <td class="right u-mono u-success" data-label="PARF">${fmt(parf)}<br><span class="u-xs u-muted">${(p * 100).toFixed(0)}%</span></td>
       <td class="right u-mono" data-label="COE Val">${coeR > 0 ? fmt(coeR) : '—'}</td>
       <td class="right u-mono u-bold" data-label="Residual">${fmt(resid)}</td>
       <td class="right u-mono u-bold" data-label="Annual Dep" style="color:${col}">${dep !== null ? fmtK(dep) : '—'}</td>
