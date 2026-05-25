@@ -95,9 +95,8 @@ function renderCommand() {
   }
   actions.push({ icon: '📞', title: 'Confirm IONIQ 9 Demo 6s availability — Ranee +65 9850 5206', body: 'Current top-ranked option for 6-seat BEV. Confirm mileage and that last-known price still holds before the next COE round.', urgent: true });
 
-  const scbExpiry = '2026-06-30';
-  if (daysUntil(scbExpiry) > 0) {
-    actions.push({ icon: '🏦', title: `Apply SCB CashOne personal loan — 3% cashback expires ${fmtDate(new Date(scbExpiry))}`, body: '1.08% flat + new-client cashback via SingSaver. Get in-principle approval now; draw down only at S&P signing.', urgent: daysUntil(scbExpiry) <= 14 });
+  if (daysUntil(PL_MARKET.scbExpiry) > 0) {
+    actions.push({ icon: '🏦', title: `Apply SCB CashOne personal loan — ${PL_MARKET.scbCashback}% cashback expires ${fmtDate(new Date(PL_MARKET.scbExpiry))}`, body: `${PL_MARKET.scbRate}% flat + new-client cashback via SingSaver. Get in-principle approval now; draw down only at S&P signing.`, urgent: daysUntil(PL_MARKET.scbExpiry) <= 14 });
   }
   if (dBid <= 5) {
     actions.push({ icon: '⏰', title: `COE bid closes in ${dBid} day${dBid === 1 ? '' : 's'} — results ${fmtDate(nextBid)}`, body: 'Rising trend. Each round at current trajectory adds ~$2,600 to the purchase cost. Act before this round if you can.', urgent: dBid <= 2 });
