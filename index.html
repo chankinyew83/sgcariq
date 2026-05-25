@@ -291,6 +291,12 @@ select option{background:var(--s3)}
 table{width:100%;border-collapse:collapse}
 th{font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;padding:6px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--s2)}
 th.right{text-align:right}
+/* Dep table fixed layout — prevents PARF REBATE gap */
+#dep-table-wrap table{table-layout:fixed;width:100%}
+#dep-table-wrap th:nth-child(1){width:18%}
+#dep-table-wrap th:nth-child(2){width:27%}
+#dep-table-wrap th:nth-child(3){width:27%}
+#dep-table-wrap th:nth-child(4){width:28%}
 td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:var(--t-sm)}
 tr:last-child td{border-bottom:none}
 .tr-accent td{background:rgba(37,99,235,.05)}
@@ -424,7 +430,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="card">
     <p class="card-label" id="dep-table-label">Depreciation — Tesla YL $267,999</p>
-    <div class="overflow-x">
+    <div class="overflow-x" id="dep-table-wrap">
       <table>
         <thead><tr><th>Hold</th><th class="right">PARF Rebate</th><th class="right">This Year</th><th class="right">Avg / yr</th></tr></thead>
         <tbody id="dep-table"></tbody>
