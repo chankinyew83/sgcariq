@@ -418,11 +418,11 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="card">
     <p class="card-label">Cost Breakdown — <span id="own-label">—</span></p>
-    <p class="u-xs u-muted mb-3">Applies Budget 2026 PARF schedule (5%–30%, cap $30k).</p>
+    <p class="u-xs u-muted mb-3">Applies Budget 2026 PARF schedule (5%–30%, cap $30k). Annual Dep = (Residual − Scrap PARF) ÷ Remaining Years — sgCarmart convention.</p>
     <div id="own-breakdown"></div>
   </div>
   <div class="card">
-    <p class="card-label">Depreciation — Tesla YL $264,999</p>
+    <p class="card-label" id="dep-table-label">Depreciation — Tesla YL $267,999</p>
     <div class="overflow-x">
       <table>
         <thead><tr><th>Hold</th><th>PARF %</th><th class="right">PARF</th><th class="right">COE Value</th><th class="right">Residual</th><th class="right">Annual Dep</th></tr></thead>
@@ -430,7 +430,7 @@ tr:last-child td{border-bottom:none}
       </table>
     </div>
     <button class="show-more" id="dep-more" onclick="toggleRows(this)">▾ Show all 10 years</button>
-    <p class="u-xs u-muted mt-2">Budget 2026: PARF cut 45pp. COE remaining value now drives sell-timing more than PARF. Lowest annual dep = hold 10yr. Best cash recovery = sell at 7yr.</p>
+    <p class="u-xs u-muted mt-2">Annual dep = what a buyer would see on sgCarmart at each sell age. Lower when selling earlier (more remaining years to spread cost). 7yr balances residual recovery vs COE remaining value.</p>
   </div>
 </section>
 
@@ -497,7 +497,7 @@ tr:last-child td{border-bottom:none}
     <p class="card-label">Bridge Calculator</p>
     <p class="u-sm u-dim mb-3">Take the dealer loan at the minimum qualifying amount to preserve incentives. Bridge the remainder with a cheaper personal loan. Confirm the minimum % — that single number determines the saving.</p>
     <div class="form-grid">
-      <div><label class="f-label">Car Price ($)</label><input id="b-price" type="number" value="264999" oninput="calcBridge()"></div>
+      <div><label class="f-label">Car Price ($)</label><input id="b-price" type="number" value="267999" oninput="calcBridge()"></div>
       <div><label class="f-label">MAS LTV Cap %</label><input id="b-ltv" type="number" value="60" oninput="calcBridge()"></div>
       <div><label class="f-label">Dealer Rate % flat</label><input id="b-rate" type="number" step=".01" value="1.28" oninput="calcBridge()"></div>
       <div><label class="f-label">Car Tenure yr</label><input id="b-tenure" type="number" value="7" oninput="calcBridge()"></div>
@@ -521,7 +521,7 @@ tr:last-child td{border-bottom:none}
         </tbody>
       </table>
     </div>
-    <p class="u-xs u-muted mt-2">Bridge: 10% of $264,999 ≈ $26,500 (60% MAS cap − 50% min qualifying). SCB saving net of fee + cashback. Rates depend on credit profile.</p>
+    <p class="u-xs u-muted mt-2">Bridge: 10% of $267,999 ≈ $26,800 (60% MAS cap − 50% min qualifying). SCB saving net of fee + cashback. Rates depend on credit profile.</p>
   </div>
   <div class="card card-primary">
     <button class="expand-btn" onclick="toggleExpand('bridge-how',this)" aria-expanded="false">How the bridge works</button>
@@ -545,7 +545,7 @@ tr:last-child td{border-bottom:none}
         <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">TDSR rule</span><span class="u-mono u-sm">≤ 55% gross income</span></div>
         <div class="u-between gap-line" style="padding:6px 0"><span class="u-sm">Unsecured credit cap</span><span class="u-mono u-sm">12× monthly income</span></div>
         <div class="u-between" style="background:var(--color-danger-bg);padding:6px 8px;border-radius:var(--r-sm)"><span class="u-sm u-danger">100% dealer schemes</span><span class="u-xs u-danger">Unregulated — no MAS protection</span></div>
-        <p class="u-xs u-muted">Tesla YL: $264,999 × 60% = $158,999 max loan. At 1.28%×7yr: ~$2,062/mo car + $759/mo PL = $2,821/mo → needs ~$5,130/mo gross income (TDSR).</p>
+        <p class="u-xs u-muted">Tesla YL: $267,999 × 60% = $160,799 max loan. At 1.28%×7yr: ~$2,086/mo car + $759/mo PL = $2,821/mo → needs ~$5,130/mo gross income (TDSR).</p>
       </div>
     </div>
   </div>
