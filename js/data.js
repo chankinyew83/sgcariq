@@ -116,3 +116,11 @@ let PROMOS = [
 
 // ── Score weights ──
 const W = { financial: 0.28, roadtax: 0.22, timing: 0.18, family: 0.16, brand: 0.16 };
+
+// ── Personal loan market — update here when deals change ──
+const PL_MARKET = {
+  scbRate: 1.08,
+  scbExpiry: '2026-06-30',
+  scbCashback: 3,        // % new-client cashback via SingSaver
+  scbFee: 199,           // processing fee
+};
