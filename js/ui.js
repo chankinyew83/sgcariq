@@ -262,11 +262,6 @@ function renderDepTable() {
     // Average: total accumulated loss divided by years held
     const avg      = (price - resid) / yr;
 
-    // Sweet-spot logic
-    const note = yr === 5 ? ' <span class="chip chip-success u-xs">MAX PARF</span>'
-               : yr === 7 ? ' <span class="chip chip-warning u-xs">SWEET SPOT</span>'
-               : '';
-
     const mCol = marginal > 30000 ? 'var(--color-danger)'
                : marginal > 15000 ? 'var(--color-warning)'
                : 'var(--color-success)';
@@ -274,8 +269,11 @@ function renderDepTable() {
                : avg < 60000 ? 'var(--color-warning)'
                : 'var(--color-danger)';
 
-    return `<tr class="${yr === 7 ? 'tr-accent' : ''} ${i >= 4 ? 'tr-hide' : ''}">
-      <td data-label="Hold">${yr}yr${note}</td>
+    const holdLabel = yr === 5 ? '5yr ★' : yr === 7 ? '7yr ⭐' : `${yr}yr`;
+    const rowClass  = `${yr === 7 ? 'tr-accent' : yr === 5 ? 'tr-parf5' : ''} ${i >= 4 ? 'tr-hide' : ''}`.trim();
+
+    return `<tr class="${rowClass}">
+      <td data-label="Hold">${holdLabel}</td>
       <td class="right u-mono u-success" data-label="PARF Rebate">${fmt(parf)}${parfDrop ? ' <span class="u-danger u-xs">↓</span>' : ''}</td>
       <td class="right u-mono u-bold" data-label="This Year" style="color:${mCol}">${fmtK(marginal)}</td>
       <td class="right u-mono u-bold" data-label="Avg/yr" style="color:${aCol}">${fmtK(avg)}</td>
