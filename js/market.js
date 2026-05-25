@@ -39,7 +39,7 @@ function buildPromos() {
     const priceRows = Object.entries(p.prices).map(([cid, pr]) => {
       const car = CARS.find(c => c.id === cid);
       return car
-        ? `<div class="u-between u-sm" style="padding:3px 0;border-bottom:1px solid var(--border)"><span>${car.short}</span><span class="u-mono">${fmt(pr)}</span><span class="u-mono u-success">→ ${fmt(pr - total)} net</span></div>`
+        ? `<div class="u-between u-sm" style="padding:3px 0;border-bottom:1px solid var(--border)"><span>${car.short}</span><span class="u-mono">${fmt(pr)}</span></div>`
         : '';
     }).join('');
     const cardClass = p.id.startsWith('tesla') && !expired ? 'promo-card tesla'
