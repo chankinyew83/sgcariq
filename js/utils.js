@@ -22,7 +22,11 @@ function isActive(promo) {
   return promo && new Date(promo.validUntil) >= new Date();
 }
 
-// Next COE bid date — advances by 14-day cycle from reference anchor
+// Actual current COE — always from bid history, never affected by the scenario slider
+function getActualCOE() {
+  return COE_HISTORY.bids[COE_HISTORY.bids.length - 1]?.value || S.coe;
+}
+
 function getNextCOEBidDate() {
   // COE bids every 2 weeks; reference: 20 May 2026
   const REF = new Date('2026-05-20');
