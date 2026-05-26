@@ -6,7 +6,7 @@
 // Phase 4: fetch live COE from Cloudflare Worker, silently update if newer
 async function fetchCOEFromAPI() {
   try {
-    const r = await fetch('/api/coe');
+    const r = await fetch('https://sgcariq.chankinyew.workers.dev/api/coe');
     if (!r.ok) return;
     const d = await r.json();
     if (!d.value || d._error) return;
