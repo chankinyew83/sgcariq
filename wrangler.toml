@@ -2,7 +2,3 @@ name = "sgcariq"
 main = "worker.js"
 compatibility_date = "2026-05-26"
 compatibility_flags = ["nodejs_compat"]
-
-[assets]
-directory = "."
-not_found_handling = "single-page-application"
